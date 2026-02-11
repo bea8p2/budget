@@ -28,12 +28,13 @@
     .small { font-size:.85rem; }
     footer { margin-top: 24px; color: var(--muted); font-size: .85rem; }
     .hidden { display:none; }
+    code { background: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
   </style>
 </head>
 <body>
   <header>
     <h1>Budget App (MVP)</h1>
-    <div class="muted">Add an account ➜ add transactions ➜ (optional) set a monthly budget ➜ view summary.</div>
+    <div class="muted">Add an account ➜ add transactions ➜ (optional) set a monthly budget ➜ view the combined Summary.</div>
   </header>
 
   <nav id="tabs">
@@ -49,15 +50,21 @@
     <div class="grid">
       <div class="card">
         <h3>API Settings</h3>
-        <label>API Base URL</label>
+        <label for="apiBase">API Base URL</label>
         <input id="apiBase" placeholder="http://localhost:4000" />
-        <label>Demo User ID <span class="muted">(temporary until auth)</span></label>
+        <label for="demoUser">Demo User ID <span class="muted">(temporary until auth)</span></label>
         <input id="demoUser" placeholder="64f000000000000000000001" />
         <button id="saveSettings">Save</button>
-        <p class="muted" id="settingsMsg"></p>
+        <p class="muted" id="settingsMsg" aria-live="polite"></p>
         <hr/>
         <button id="ping">Test Connection</button>
-        <div id="pingResult" class="muted small"></div>
+        <div id="pingResult" class="muted small" aria-live="polite"></div>
+
+        <!-- Optional environment presets: fill in the prod API later -->
+        <div class="row small" style="margin-top:8px;">
+          <button id="useLocal">Use Local API</button>
+          <button id="useProd">Use Prod API</button>
+        </div>
       </div>
 
       <div class="card">
@@ -76,9 +83,9 @@
     <div class="grid">
       <div class="card">
         <h3>Add Account</h3>
-        <label>Name</label>
+        <label for="accName">Name</label>
         <input id="accName" placeholder="Checking" />
-        <label>Type</label>
+        <label for="accType">Type</label>
         <select id="accType">
           <option value="checking">checking</option>
           <option value="credit">credit</option>
@@ -86,10 +93,10 @@
           <option value="savings">savings</option>
           <option value="other">other</option>
         </select>
-        <label>Currency</label>
+        <label for="accCurrency">Currency</label>
         <input id="accCurrency" value="USD" />
         <button id="addAccount">Create Account</button>
-        <div id="accountMsg" class="muted small"></div>
+        <div id="accountMsg" class="muted small" aria-live="polite"></div>
       </div>
 
       <div class="card">
@@ -107,28 +114,35 @@
     <div class="grid">
       <div class="card">
         <h3>Add Transaction</h3>
-        <label>Account</label>
+        <label for="txAccount">Account</label>
         <select id="txAccount"></select>
-        <label>Date</label>
+        <label for="txDate">Date</label>
         <input id="txDate" type="date" />
-        <label>Amount <span class="muted">(expense = negative, income = positive)</span></label>
+        <label for="txAmount">Amount <span class="muted">(expense = negative, income = positive)</span></label>
         <input id="txAmount" type="number" step="0.01" />
-        <label>Category</label>
+        <label for="txCategory">Category</label>
         <input id="txCategory" placeholder="Groceries" />
-        <label>Note (optional)</label>
+        <label for="txNote">Note (optional)</label>
         <input id="txNote" />
         <button id="addTx">Add</button>
-        <div id="txMsg" class="muted small"></div>
+        <div id="txMsg" class="muted small" aria-live="polite"></div>
       </div>
 
       <div class="card">
         <div class="row" style="justify-content:space-between;">
           <h3>Recent Transactions</h3>
-          <div class="row">
-            <label class="muted small">Limit</label>
+          <div class="row small">
+            <label class="muted small" for="fltYear">Year</label>
+            <input id="fltYear" type="number" style="width:90px" />
+            <label class="muted small" for="fltMonth">Month</label>
+            <input id="fltMonth" type="number" min="1" max="12" style="width:70px" />
+            <label class="muted small" for="fltCategory">Category</label>
+            <input id="fltCategory" placeholder="All" style="width:120px" />
+            <label class="muted small" for="txLimit">Limit</label>
             <select id="txLimit">
-              <option>20</option><option>50</option><option selected>100</option>
+              <option>20</option><option>50</option><option selected>100</option><option>200</option>
             </select>
+            <button id="applyFilters" class="small">Apply</button>
             <button id="refreshTx" class="small">Refresh</button>
           </div>
         </div>
@@ -147,11 +161,11 @@
         <h3>Edit Monthly Budget</h3>
         <div class="row">
           <div style="flex:1">
-            <label>Year</label>
+            <label for="bdgYear">Year</label>
             <input id="bdgYear" type="number" />
           </div>
           <div style="flex:1">
-            <label>Month (1-12)</label>
+            <label for="bdgMonth">Month (1-12)</label>
             <input id="bdgMonth" type="number" min="1" max="12" />
           </div>
         </div>
@@ -161,7 +175,7 @@
           <button id="loadBudget">Load</button>
           <button id="saveBudget">Save</button>
         </div>
-        <div id="bdgMsg" class="muted small"></div>
+        <div id="bdgMsg" class="muted small" aria-live="polite"></div>
       </div>
 
       <div class="card">
@@ -174,31 +188,66 @@
     </div>
   </section>
 
-  <!-- SUMMARY -->
+  <!-- SUMMARY (Dashboard + Detailed Breakdown) -->
   <section id="summary" class="tab hidden">
     <div class="grid">
+      <!-- Month Snapshot -->
       <div class="card">
-        <h3>Monthly Summary</h3>
+        <h3>Month Snapshot</h3>
         <div class="row">
           <div style="flex:1">
-            <label>Year</label>
+            <label for="sumYear">Year</label>
             <input id="sumYear" type="number" />
           </div>
           <div style="flex:1">
-            <label>Month (1-12)</label>
+            <label for="sumMonth">Month (1-12)</label>
             <input id="sumMonth" type="number" min="1" max="12" />
           </div>
           <div style="align-self:end">
             <button id="runSummary">Run</button>
           </div>
         </div>
-        <div class="muted small">Computed on the client using your transactions (no server report required yet).</div>
+        <div class="muted small">Computed client‑side using your transactions.</div>
+
+        <div class="grid" style="grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); margin-top:12px;">
+          <div class="card">
+            <div class="muted small">Total Expenses</div>
+            <h2 id="sumTotalExpenses" class="danger">–</h2>
+          </div>
+          <div class="card">
+            <div class="muted small">Total Income</div>
+            <h2 id="sumTotalIncome" class="success">–</h2>
+          </div>
+          <div class="card">
+            <div class="muted small">Net</div>
+            <h2 id="sumNet">–</h2>
+          </div>
+        </div>
+
+        <div id="sumMsg" class="muted small" aria-live="polite"></div>
       </div>
 
+      <!-- Top Categories -->
       <div class="card">
+        <h3>Top Categories (Expenses)</h3>
+        <table>
+          <thead><tr><th>Category</th><th class="right">Spent</th></tr></thead>
+          <tbody id="sumTopCats"></tbody>
+        </table>
+      </div>
+
+      <!-- Full Category Breakdown -->
+      <div class="card" style="grid-column: 1 / -1;">
         <h3>Category Totals</h3>
         <table>
-          <thead><tr><th>Category</th><th class="right">Spent</th><th class="right">Budget</th><th class="right">Variance</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="right">Spent</th>
+              <th class="right">Budget</th>
+              <th class="right">Variance</th>
+            </tr>
+          </thead>
           <tbody id="sumRows"></tbody>
         </table>
       </div>

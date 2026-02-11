@@ -4,7 +4,8 @@ const state = {
   apiBase: localStorage.getItem('API_BASE') || 'http://localhost:4000',
   demoUser: localStorage.getItem('DEMO_USER') || '64f000000000000000000001',
   accounts: [],
-  accountMap: {}
+  accountMap: {},
+  token: localStorage.getItem('JWT_TOKEN') || '' // (for later JWT auth)
 };
 
 function saveSettings() {
@@ -14,37 +15,61 @@ function saveSettings() {
   localStorage.setItem('DEMO_USER', state.demoUser);
 }
 
-function fmtMoney(n) {
+function fmtMoney(n, currency = 'USD') {
   if (typeof n !== 'number' || Number.isNaN(n)) return '';
-  return n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+  return n.toLocaleString(undefined, { style: 'currency', currency });
 }
 function startOfMonth(y, m) { return new Date(Date.UTC(y, m - 1, 1)); }
 function endOfMonth(y, m) { return new Date(Date.UTC(y, m, 0, 23, 59, 59, 999)); }
 
-// --- API wrapper with demo auth header ---
+function setMsg(id, text, kind = 'info') {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = text || '';
+  el.classList.toggle('danger', kind === 'error');
+  el.classList.toggle('success', kind === 'success');
+}
+
+async function withPending(btn, fn) {
+  const original = btn.innerText;
+  btn.disabled = true;
+  btn.innerText = 'Working…';
+  try { return await fn(); }
+  finally { btn.disabled = false; btn.innerText = original; }
+}
+
+// --- API wrapper (demo auth header for now, friendly errors) ---
 async function api(path, { method = 'GET', body } = {}) {
   const url = `${state.apiBase}${path}`;
-  const opts = {
+  const headers = {};
+  // When JWT exists later:
+  if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
+  else headers['x-demo-user'] = state.demoUser;
+
+  if (body) headers['Content-Type'] = 'application/json';
+
+  const res = await fetch(url, {
     method,
-    headers: { 'x-demo-user': state.demoUser }
-  };
-  if (body) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
-  }
-  const res = await fetch(url, opts);
+    headers,
+    body: body ? JSON.stringify(body) : undefined
+  });
+
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+
   if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`${res.status} ${res.statusText} – ${txt}`);
+    const msg = (data && data.error) ? data.error : (typeof data === 'string' && data ? data : `${res.status} ${res.statusText}`);
+    throw new Error(msg);
   }
-  const ct = res.headers.get('content-type') || '';
-  return ct.includes('application/json') ? res.json() : res.text();
+  return data;
 }
 
 // --- Tabs ---
 const tabsNav = $('tabs');
 tabsNav.addEventListener('click', (e) => {
   if (e.target.tagName !== 'BUTTON') return;
+
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   e.target.classList.add('active');
 
@@ -53,7 +78,7 @@ tabsNav.addEventListener('click', (e) => {
   $(target).classList.remove('hidden');
 
   if (target === 'accounts') loadAccounts();
-  if (target === 'transactions') { loadAccountsForTx(); loadTransactions(); }
+  if (target === 'transactions') { setDefaultTxFilters(); loadAccountsForTx(); loadTransactions(); }
   if (target === 'budgets') { setDefaultPeriodFields(); loadBudgetUI(); }
   if (target === 'summary') { setDefaultPeriodFields(); }
 });
@@ -62,55 +87,83 @@ tabsNav.addEventListener('click', (e) => {
 function hydrateSettings() {
   $('apiBase').value = state.apiBase;
   $('demoUser').value = state.demoUser;
+
   $('saveSettings').onclick = () => {
     saveSettings();
-    $('settingsMsg').innerText = 'Saved.';
-    setTimeout(() => ($('settingsMsg').innerText = ''), 1500);
+    setMsg('settingsMsg', 'Saved.', 'success');
+    setTimeout(() => setMsg('settingsMsg', ''), 1500);
   };
+
   $('ping').onclick = async () => {
+    setMsg('pingResult', 'Testing…');
     try {
       const data = await api('/health');
-      $('pingResult').innerText = `Connected: ${JSON.stringify(data)}`;
+      setMsg('pingResult', `Connected: ${JSON.stringify(data)}`, 'success');
     } catch (err) {
-      $('pingResult').innerText = `Failed: ${err.message}`;
+      setMsg('pingResult', err.message, 'error');
     }
   };
+
+  // Optional presets (only if buttons exist in HTML)
+  const useLocal = $('useLocal');
+  if (useLocal) {
+    useLocal.onclick = () => {
+      $('apiBase').value = 'http://localhost:4000';
+      $('saveSettings').click();
+    };
+  }
+  const useProd = $('useProd');
+  if (useProd) {
+    useProd.onclick = () => {
+      // Replace with your deployed API later
+      $('apiBase').value = 'https://your-api.onrender.com';
+      $('saveSettings').click();
+    };
+  }
 }
 
 // --- Accounts ---
 async function loadAccounts() {
   try {
+    setMsg('accountMsg', 'Loading…');
     const items = await api('/accounts');
     state.accounts = items;
     state.accountMap = Object.fromEntries(items.map(a => [a._id, a]));
     const rows = $('accountRows');
-    rows.innerHTML = items.map(a => `
-      <tr>
-        <td>${a.name}</td>
-        <td><span class="pill">${a.type}</span></td>
-        <td>${a.currency}</td>
-      </tr>
-    `).join('') || `<tr><td colspan="3" class="muted">No accounts yet.</td></tr>`;
+    rows.innerHTML = items.length
+      ? items.map(a => `
+        <tr>
+          <td>${a.name}</td>
+          <td><span class="pill">${a.type}</span></td>
+          <td>${a.currency}</td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="3" class="muted">No accounts yet.</td></tr>`;
+    setMsg('accountMsg', '');
   } catch (err) {
-    $('accountMsg').innerText = err.message;
+    setMsg('accountMsg', err.message, 'error');
   }
 }
 
-$('addAccount').onclick = async () => {
-  try {
-    const name = $('accName').value.trim();
-    const type = $('accType').value;
-    const currency = $('accCurrency').value.trim() || 'USD';
-    if (!name) throw new Error('Name is required');
-    const item = await api('/accounts', { method: 'POST', body: { name, type, currency } });
-    $('accountMsg').innerText = 'Account created.';
-    $('accName').value = '';
-    await loadAccounts();
-    await loadAccountsForTx();
-  } catch (err) {
-    $('accountMsg').innerText = err.message;
-  }
-};
+$('addAccount').onclick = () =>
+  withPending($('addAccount'), async () => {
+    setMsg('accountMsg', '');
+    try {
+      const name = $('accName').value.trim();
+      const type = $('accType').value;
+      const currency = $('accCurrency').value.trim() || 'USD';
+      if (!name) throw new Error('Name is required');
+
+      await api('/accounts', { method: 'POST', body: { name, type, currency } });
+      setMsg('accountMsg', 'Account created.', 'success');
+      $('accName').value = '';
+      $('accName').focus();
+      await loadAccounts();
+      await loadAccountsForTx();
+    } catch (err) {
+      setMsg('accountMsg', err.message, 'error');
+    }
+  });
 
 // --- Transactions ---
 async function loadAccountsForTx() {
@@ -119,83 +172,144 @@ async function loadAccountsForTx() {
   sel.innerHTML = state.accounts.map(a => `<option value="${a._id}">${a.name} (${a.type})</option>`).join('');
 }
 
-$('addTx').onclick = async () => {
-  try {
-    const accountId = $('txAccount').value;
-    const date = $('txDate').value;
-    const amount = Number($('txAmount').value);
-    const category = $('txCategory').value.trim();
-    const note = $('txNote').value.trim();
-    if (!accountId || !date || !category || Number.isNaN(amount)) {
-      throw new Error('Account, date, amount, and category are required.');
-    }
-    await api('/transactions', { method: 'POST', body: { accountId, date, amount, category, note } });
-    $('txMsg').innerText = 'Added.';
-    $('txDate').value = ''; $('txAmount').value = ''; $('txCategory').value = ''; $('txNote').value = '';
-    await loadTransactions();
-  } catch (err) {
-    $('txMsg').innerText = err.message;
-  }
-};
+function setDefaultTransactionDate() {
+  const now = new Date();
+  const yyyy = now.getUTCFullYear();
+  const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(now.getUTCDate()).padStart(2, '0');
+  const el = $('txDate');
+  if (el && !el.value) el.value = `${yyyy}-${mm}-${dd}`;
+}
 
-$('refreshTx').onclick = loadTransactions;
+function setDefaultTxFilters() {
+  const now = new Date();
+  const fy = $('fltYear'); const fm = $('fltMonth');
+  if (fy) fy.value = now.getUTCFullYear();
+  if (fm) fm.value = now.getUTCMonth() + 1;
+  const fc = $('fltCategory');
+  if (fc && !fc.value) fc.value = '';
+  setDefaultTransactionDate();
+}
+
+$('addTx').onclick = () =>
+  withPending($('addTx'), async () => {
+    setMsg('txMsg', '');
+    try {
+      const accountId = $('txAccount').value;
+      const date = $('txDate').value;
+      const amount = Number($('txAmount').value);
+      const category = $('txCategory').value.trim();
+      const note = $('txNote').value.trim();
+      if (!accountId || !date || !category || Number.isNaN(amount)) {
+        throw new Error('Account, date, amount, and category are required.');
+      }
+      if (amount === 0) throw new Error('Amount cannot be 0.');
+
+      await api('/transactions', { method: 'POST', body: { accountId, date, amount, category, note } });
+      setMsg('txMsg', 'Added.', 'success');
+      $('txDate').value = '';
+      $('txAmount').value = '';
+      $('txCategory').value = '';
+      $('txNote').value = '';
+      $('txCategory').focus();
+      await loadTransactions();
+    } catch (err) {
+      setMsg('txMsg', err.message, 'error');
+    }
+  });
+
+$('applyFilters').onclick = () =>
+  withPending($('applyFilters'), loadTransactions);
+
+$('refreshTx').onclick = () =>
+  withPending($('refreshTx'), loadTransactions);
 
 async function loadTransactions() {
   try {
     const limit = Number($('txLimit').value || 100);
-    const items = await api(`/transactions?limit=${limit}`);
-    const rows = $('txRows');
-    rows.innerHTML = items.map(t => `
-      <tr>
-        <td>${new Date(t.date).toLocaleDateString()}</td>
-        <td>${state.accountMap[t.accountId]?.name || '—'}</td>
-        <td class="right ${t.amount < 0 ? 'danger' : 'success'}">${fmtMoney(t.amount)}</td>
-        <td>${t.category}</td>
-        <td>${t.note || ''}</td>
-        <td class="right"><button class="small" data-del="${t._id}">Delete</button></td>
-      </tr>
-    `).join('') || `<tr><td colspan="6" class="muted">No transactions yet.</td></tr>`;
 
-    // wire delete buttons
+    const y = Number(($('fltYear') || {}).value || 0);
+    const m = Number(($('fltMonth') || {}).value || 0);
+    const cat = (($('fltCategory') || {}).value || '').trim();
+
+    let query = `?limit=${limit}`;
+    if (y && m) {
+      const from = startOfMonth(y, m).toISOString();
+      const to = endOfMonth(y, m).toISOString();
+      query += `&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    }
+    if (cat) query += `&category=${encodeURIComponent(cat)}`;
+
+    setMsg('txMsg', 'Loading…');
+    const items = await api(`/transactions${query}`);
+    const rows = $('txRows');
+    rows.innerHTML = items.length
+      ? items.map(t => `
+        <tr>
+          <td>${new Date(t.date).toLocaleDateString()}</td>
+          <td>${state.accountMap[t.accountId]?.name || '—'}</td>
+          <td class="right ${t.amount < 0 ? 'danger' : 'success'}">${fmtMoney(t.amount)}</td>
+          <td>${t.category}</td>
+          <td>${t.note || ''}</td>
+          <td class="right"><button class="small" data-del="${t._id}">Delete</button></td>
+        </tr>
+      `).join('')
+      : `<tr><td colspan="6" class="muted">No transactions found.</td></tr>`;
+
+    // confirm-before-delete
     rows.querySelectorAll('button[data-del]').forEach(btn => {
       btn.onclick = async () => {
+        if (!confirm('Delete this transaction?')) return;
         try {
           await api(`/transactions/${btn.dataset.del}`, { method: 'DELETE' });
           await loadTransactions();
         } catch (err) {
-          alert(err.message);
+          setMsg('txMsg', err.message, 'error');
         }
       };
     });
+
+    setMsg('txMsg', '');
   } catch (err) {
-    $('txMsg').innerText = err.message;
+    setMsg('txMsg', err.message, 'error');
   }
 }
 
 // --- Budgets ---
 function setDefaultPeriodFields() {
   const now = new Date();
-  $('bdgYear').value = $('sumYear').value = now.getUTCFullYear();
-  $('bdgMonth').value = $('sumMonth').value = now.getUTCMonth() + 1;
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth() + 1;
+  if ($('bdgYear')) $('bdgYear').value = year;
+  if ($('bdgMonth')) $('bdgMonth').value = month;
+  if ($('sumYear')) $('sumYear').value = year;
+  if ($('sumMonth')) $('sumMonth').value = month;
 }
 
-$('loadBudget').onclick = loadBudgetUI;
-$('saveBudget').onclick = saveBudget;
+$('loadBudget').onclick = () =>
+  withPending($('loadBudget'), loadBudgetUI);
+
+$('saveBudget').onclick = () =>
+  withPending($('saveBudget'), saveBudget);
 
 async function loadBudgetUI() {
   try {
     const y = Number($('bdgYear').value);
     const m = Number($('bdgMonth').value);
+    setMsg('bdgMsg', 'Loading…');
     const doc = await api(`/budgets/${y}/${m}`);
     const lines = (doc.limits || []).map(l => `${l.category},${l.limit}`).join('\n');
     $('bdgLines').value = lines;
     renderBudgetRows(doc.limits || []);
-    $('bdgMsg').innerText = '';
+    setMsg('bdgMsg', '');
   } catch (err) {
-    // 404 is fine (no budget yet)
     $('bdgLines').value = '';
     $('bdgRows').innerHTML = `<tr><td colspan="2" class="muted">No budget set for this month.</td></tr>`;
-    $('bdgMsg').innerText = err.message.includes('404') ? 'No budget for this month yet.' : err.message;
+    if (String(err.message).includes('No budget')) {
+      setMsg('bdgMsg', 'No budget for this month yet.', 'info');
+    } else {
+      setMsg('bdgMsg', err.message, 'error');
+    }
   }
 }
 
@@ -224,14 +338,14 @@ async function saveBudget() {
     const limits = parseBudgetLines();
     const doc = await api(`/budgets/${y}/${m}`, { method: 'PUT', body: { limits } });
     renderBudgetRows(doc.limits || []);
-    $('bdgMsg').innerText = 'Saved.';
-    setTimeout(() => ($('bdgMsg').innerText = ''), 1500);
+    setMsg('bdgMsg', 'Saved.', 'success');
+    setTimeout(() => setMsg('bdgMsg', ''), 1500);
   } catch (err) {
-    $('bdgMsg').innerText = err.message;
+    setMsg('bdgMsg', err.message, 'error');
   }
 }
 
-// --- Summary (client-side aggregation) ---
+// --- Summary (Dashboard + Detailed Breakdown in one tab) ---
 $('runSummary').onclick = runSummary;
 
 async function runSummary() {
@@ -241,40 +355,72 @@ async function runSummary() {
     const from = startOfMonth(y, m).toISOString();
     const to = endOfMonth(y, m).toISOString();
 
-    // Pull transactions for the month
-    const tx = await api(`/transactions?from=${from}&to=${to}&limit=1000`);
-    // Pull budget (optional)
-    let budgetDoc = null;
-    try { budgetDoc = await api(`/budgets/${y}/${m}`); } catch { /* no budget */ }
+    setMsg('sumMsg', 'Loading…');
 
-    // Group expenses (amount < 0) by category
-    const totals = {};
+    // Pull transactions for the month
+    const tx = await api(`/transactions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=2000`);
+
+    // Totals + category grouping
+    let totalExpenses = 0;
+    let totalIncome = 0;
+    const byCategory = {};
+
     tx.forEach(t => {
       if (t.amount < 0) {
-        totals[t.category] = (totals[t.category] || 0) + t.amount; // negative numbers
+        totalExpenses += t.amount; // negative
+        byCategory[t.category] = (byCategory[t.category] || 0) + t.amount;
+      } else {
+        totalIncome += t.amount; // positive
       }
     });
 
-    // Build rows with optional budget comparison
+    const net = totalIncome + totalExpenses;
+
+    // Render Month Snapshot
+    $('sumTotalExpenses').textContent = fmtMoney(totalExpenses);
+    $('sumTotalIncome').textContent = fmtMoney(totalIncome);
+    $('sumNet').textContent = fmtMoney(net);
+    $('sumNet').classList.toggle('danger', net < 0);
+    $('sumNet').classList.toggle('success', net >= 0);
+
+    // Top Categories (most negative first)
+    const top = Object.keys(byCategory)
+      .map(cat => ({ cat, spent: byCategory[cat] }))
+      .sort((a, b) => a.spent - b.spent)
+      .slice(0, 5);
+
+    $('sumTopCats').innerHTML = top.length
+      ? top.map(c => `<tr><td>${c.cat}</td><td class="right danger">${fmtMoney(c.spent)}</td></tr>`).join('')
+      : `<tr><td colspan="2" class="muted">No expenses this month.</td></tr>`;
+
+    // Budget comparison (optional)
+    let budgetDoc = null;
+    try { budgetDoc = await api(`/budgets/${y}/${m}`); } catch {}
     const limits = Object.fromEntries((budgetDoc?.limits || []).map(l => [l.category, l.limit]));
-    const categories = Object.keys(totals).sort((a, b) => totals[a] - totals[b]); // most negative first
-    const rows = $('sumRows');
-    rows.innerHTML = categories.map(cat => {
-      const spent = totals[cat]; // negative
-      const limit = limits[cat] ?? null;
-      const variance = limit != null ? limit + spent : null; // spent is negative
-      return `
-        <tr>
-          <td>${cat}</td>
-          <td class="right danger">${fmtMoney(spent)}</td>
-          <td class="right">${limit != null ? fmtMoney(limit) : ''}</td>
-          <td class="right ${variance != null && variance < 0 ? 'danger' : 'success'}">
-            ${variance != null ? fmtMoney(variance) : ''}
-          </td>
-        </tr>`;
-    }).join('') || `<tr><td colspan="4" class="muted">No expenses this month.</td></tr>`;
+
+    const categories = Object.keys(byCategory).sort((a, b) => byCategory[a] - byCategory[b]);
+
+    $('sumRows').innerHTML = categories.length
+      ? categories.map(cat => {
+          const spent = byCategory[cat]; // negative
+          const limit = limits[cat] ?? null;
+          const variance = limit != null ? limit + spent : null; // spent negative
+          return `
+            <tr>
+              <td>${cat}</td>
+              <td class="right danger">${fmtMoney(spent)}</td>
+              <td class="right">${limit != null ? fmtMoney(limit) : ''}</td>
+              <td class="right ${variance != null && variance < 0 ? 'danger' : 'success'}">
+                ${variance != null ? fmtMoney(variance) : ''}
+              </td>
+            </tr>
+          `;
+        }).join('')
+      : `<tr><td colspan="4" class="muted">No expenses this month.</td></tr>`;
+
+    setMsg('sumMsg', '');
   } catch (err) {
-    alert(err.message);
+    setMsg('sumMsg', err.message, 'error');
   }
 }
 
@@ -282,6 +428,7 @@ async function runSummary() {
 function boot() {
   hydrateSettings();
   setDefaultPeriodFields();
-  // Default to Settings first; you can switch tabs after saving
+  setDefaultTransactionDate();
+  // Start on Settings; you can switch tabs after saving
 }
 document.addEventListener('DOMContentLoaded', boot);
