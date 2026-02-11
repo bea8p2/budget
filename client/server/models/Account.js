@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 
 const accountSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true, index: true },
+    userId: { type: String, required: true, index: true },
     name: { type: String, required: true }, // e.g., "Checking", "Visa"
     type: { type: String, enum: ['checking', 'credit', 'cash', 'savings', 'other'], required: true },
     currency: { type: String, default: 'USD' }, // ISO 4217 code

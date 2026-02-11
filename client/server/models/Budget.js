@@ -13,7 +13,7 @@ const limitSchema = new mongoose.Schema(
 
 const budgetSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true, index: true },
+    userId: { type: String, required: true, index: true },
     period: {
       year: { type: Number, required: true },
       month: { type: Number, min: 1, max: 12, required: true }

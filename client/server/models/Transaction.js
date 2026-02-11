@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 
 const transactionSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true, index: true },
+    userId: { type: String, required: true, index: true },
     accountId: { type: mongoose.Types.ObjectId, ref: 'Account', required: true, index: true },
     date: { type: Date, required: true, index: true },
     amount: { type: Number, required: true }, // expense: -45.20, income: 2500
