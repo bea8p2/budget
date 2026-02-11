@@ -6,6 +6,7 @@
 - Budgets are **per (year, month)**. MVP has **no rollover**.
 - Categories are simple **strings** for MVP (no separate categories collection).
 
+
 ## Collections
 - `users`: { email, passwordHash, createdAt }
 - `accounts`: { userId, name, type, currency, createdAt }
@@ -21,3 +22,4 @@
 - Do we want category normalization (a `categories` collection) later?
 - Add currency per account only (no per-transaction currency in MVP).
 - Rollover rules (future): unused budget can optionally roll into next month.
+- Freemium model with future months restricted to paywall. Only current month allowed under free period.
