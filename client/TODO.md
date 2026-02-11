@@ -5,8 +5,8 @@ This file tracks WHAT to do next. Details live in NOTES.md.
 ---
 
 ## ✅ NOW (current focus — small, low-risk improvements)
-- [ ] Backend: add basic validation to POST /accounts and POST /transactions (required fields, types)
-- [ ] Backend: friendly error messages (400 for validation, 404 for missing resources)
+- [✅] Backend: add basic validation to POST /accounts and POST /transactions (required fields, types)
+- [ Testing ] Backend: friendly error messages (400 for validation, 404 for missing resources)
 - [ ] Frontend: show inline errors under forms (Accounts, Transactions, Budgets)
 - [ ] Frontend: disable submit buttons during requests (re-enable after)
 - [ ] Frontend: default dates/month fields to current UTC (ensure they show on load)

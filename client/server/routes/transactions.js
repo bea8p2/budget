@@ -3,6 +3,7 @@ import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import Transaction from '../models/Transaction.js';
 import Account from '../models/Account.js';
+import { asyncHandler, badRequest, notFound as notFoundErr } from '../utils/errors.js';
 
 const router = express.Router();
 router.use(requireAuth);
@@ -21,8 +22,9 @@ function toNumberMaybe(n) {
  * GET /transactions
  * query: from, to, category, accountId, limit
  */
-router.get('/', async (req, res) => {
-  try {
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const { from, to, category, accountId } = req.query;
     const limit = Math.min(1000, Math.max(1, Number(req.query.limit ?? 50)));
 
@@ -30,11 +32,11 @@ router.get('/', async (req, res) => {
     if (from || to) {
       q.date = {};
       if (from) {
-        if (!isISODateLike(from)) return res.status(400).json({ error: 'Query param "from" must be a valid date.' });
+        if (!isISODateLike(from)) throw badRequest('Query param "from" must be a valid date.');
         q.date.$gte = new Date(from);
       }
       if (to) {
-        if (!isISODateLike(to)) return res.status(400).json({ error: 'Query param "to" must be a valid date.' });
+        if (!isISODateLike(to)) throw badRequest('Query param "to" must be a valid date.');
         q.date.$lte = new Date(to);
       }
     }
@@ -42,11 +44,9 @@ router.get('/', async (req, res) => {
     if (accountId) q.accountId = accountId;
 
     const items = await Transaction.find(q).sort({ date: -1 }).limit(limit);
-    return res.json(items);
-  } catch (err) {
-    return res.status(500).json({ error: err.message || 'Unexpected error' });
-  }
-});
+    res.json(items);
+  })
+);
 
 /**
  * POST /transactions
@@ -57,8 +57,9 @@ router.get('/', async (req, res) => {
  *  - amount: required, number (expense negative, income positive)
  *  - category: required, non-empty
  */
-router.post('/', async (req, res) => {
-  try {
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
     const body = req.body || {};
     const accountId = (body.accountId ?? '').toString().trim();
     const dateRaw = body.date;
@@ -68,24 +69,14 @@ router.post('/', async (req, res) => {
     const tags = Array.isArray(body.tags) ? body.tags.map(String) : [];
 
     // Validate required fields
-    if (!accountId) {
-      return res.status(400).json({ error: 'accountId is required.' });
-    }
-    if (!dateRaw || !isISODateLike(dateRaw)) {
-      return res.status(400).json({ error: 'date is required and must be a valid date.' });
-    }
-    if (amount === null) {
-      return res.status(400).json({ error: 'amount is required and must be a number.' });
-    }
-    if (!category) {
-      return res.status(400).json({ error: 'category is required.' });
-    }
+    if (!accountId) throw badRequest('accountId is required.');
+    if (!dateRaw || !isISODateLike(dateRaw)) throw badRequest('date is required and must be a valid date.');
+    if (amount === null) throw badRequest('amount is required and must be a number.');
+    if (!category) throw badRequest('category is required.');
 
     // Ensure the account belongs to the current user
     const acc = await Account.findOne({ _id: accountId, userId: req.user.id });
-    if (!acc) {
-      return res.status(404).json({ error: 'Account not found for this user.' });
-    }
+    if (!acc) throw notFoundErr('Account not found for this user.');
 
     const tx = await Transaction.create({
       userId: req.user.id,
@@ -97,27 +88,22 @@ router.post('/', async (req, res) => {
       tags
     });
 
-    return res.status(201).json(tx);
-  } catch (err) {
-    return res.status(400).json({ error: err.message || 'Could not create transaction.' });
-  }
-});
+    res.status(201).json(tx);
+  })
+);
 
 /**
  * DELETE /transactions/:id
  * ensures the transaction belongs to the current user
  */
-router.delete('/:id', async (req, res) => {
-  try {
+router.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const { id } = req.params;
     const result = await Transaction.deleteOne({ _id: id, userId: req.user.id });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: 'Transaction not found.' });
-    }
-    return res.json({ ok: true });
-  } catch (err) {
-    return res.status(400).json({ error: err.message || 'Could not delete transaction.' });
-  }
-});
+    if (result.deletedCount === 0) throw notFoundErr('Transaction not found.');
+    res.json({ ok: true });
+  })
+);
 
 export default router;

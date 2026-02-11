@@ -2,6 +2,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import Account from '../models/Account.js';
+import { asyncHandler, badRequest } from '../utils/errors.js';
 
 const router = express.Router();
 
@@ -11,14 +12,13 @@ router.use(requireAuth);
  * GET /accounts
  * returns: list of accounts for current user
  */
-router.get('/', async (req, res) => {
-  try {
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const items = await Account.find({ userId: req.user.id }).sort({ createdAt: -1 });
-    return res.json(items);
-  } catch (err) {
-    return res.status(500).json({ error: err.message || 'Unexpected error' });
-  }
-});
+    res.json(items);
+  })
+);
 
 /**
  * POST /accounts
@@ -28,8 +28,9 @@ router.get('/', async (req, res) => {
  *  - type: one of allowed enum
  *  - currency: optional, default 'USD'
  */
-router.post('/', async (req, res) => {
-  try {
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
     let { name, type, currency } = req.body || {};
 
     // Normalize inputs
@@ -39,25 +40,17 @@ router.post('/', async (req, res) => {
 
     // Validation
     const allowedTypes = ['checking', 'credit', 'cash', 'savings', 'other'];
-    if (!name) {
-      return res.status(400).json({ error: 'Account name is required.' });
-    }
+    if (!name) throw badRequest('Account name is required.');
     if (!allowedTypes.includes(type)) {
-      return res.status(400).json({ error: `Invalid account type. Use one of: ${allowedTypes.join(', ')}` });
+      throw badRequest(`Invalid account type. Use one of: ${allowedTypes.join(', ')}`);
     }
     if (currency.length !== 3) {
-      return res.status(400).json({ error: 'Currency must be a 3-letter ISO code (e.g., USD).' });
+      throw badRequest('Currency must be a 3-letter ISO code (e.g., USD).');
     }
 
     const item = await Account.create({ userId: req.user.id, name, type, currency });
-    return res.status(201).json(item);
-  } catch (err) {
-    // handle duplicate (userId, name) unique index
-    if (err?.code === 11000) {
-      return res.status(400).json({ error: 'An account with this name already exists for this user.' });
-    }
-    return res.status(400).json({ error: err.message || 'Could not create account.' });
-  }
-});
+    res.status(201).json(item);
+  })
+);
 
 export default router;
