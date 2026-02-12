@@ -26,8 +26,11 @@ import { api } from './app.js';
 
 document.getElementById('signupForm').onsubmit = async (e) => {
   e.preventDefault();
-  const email = email.value.trim();
-  const password = password.value.trim();
+const emailEl = $('email');
+const passwordEl = $('password');
+
+const email = emailEl.value.trim();
+const password = passwordEl.value.trim();
 
   try {
     const res = await api('/auth/register', {
