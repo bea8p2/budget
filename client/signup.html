@@ -21,27 +21,31 @@
 
 <p id="msg"></p>
 
+<!-- Load app.js FIRST so $(), api(), state, etc. exist -->
+<script type="module" src="./app.js"></script>
+
+<!-- Signup logic -->
 <script type="module">
 import { api } from './app.js';
 
-document.getElementById('signupForm').onsubmit = async (e) => {
-  e.preventDefault();
-const emailEl = $('email');
-const passwordEl = $('password');
+const $ = (id) => document.getElementById(id);
 
-const email = emailEl.value.trim();
-const password = passwordEl.value.trim();
+$('signupForm').onsubmit = async (e) => {
+  e.preventDefault();
+
+  const email = $('email').value.trim();
+  const password = $('password').value.trim();
 
   try {
-    const res = await api('/auth/register', {
+    await api('/auth/register', {
       method: 'POST',
       body: { email, password }
     });
 
-    // Auto-login happens on backend (cookie set)
+    // Backend sets cookie → user is logged in
     window.location.href = '/index.html';
   } catch (err) {
-    msg.textContent = err.message;
+    $('msg').textContent = err.message;
   }
 };
 </script>

@@ -2,12 +2,12 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
+  <title>Log In</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<h2>Login</h2>
+<h2>Log In</h2>
 
 <form id="loginForm">
   <label>Email</label>
@@ -16,28 +16,36 @@
   <label>Password</label>
   <input type="password" id="password" required>
 
-  <button type="submit">Login</button>
+  <button type="submit">Log In</button>
 </form>
 
 <p id="msg"></p>
 
+<!-- Load app.js FIRST so $(), api(), state, etc. exist -->
+<script type="module" src="./app.js"></script>
+
+<!-- Login logic -->
 <script type="module">
 import { api } from './app.js';
 
-document.getElementById('loginForm').onsubmit = async (e) => {
+const $ = (id) => document.getElementById(id);
+
+$('loginForm').onsubmit = async (e) => {
   e.preventDefault();
-  const email = email.value.trim();
-  const password = password.value.trim();
+
+  const email = $('email').value.trim();
+  const password = $('password').value.trim();
 
   try {
-    const res = await api('/auth/login', {
+    await api('/auth/login', {
       method: 'POST',
       body: { email, password }
     });
 
+    // Cookie set → redirect to dashboard
     window.location.href = '/index.html';
   } catch (err) {
-    msg.textContent = err.message;
+    $('msg').textContent = err.message;
   }
 };
 </script>
