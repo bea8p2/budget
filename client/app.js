@@ -431,13 +431,7 @@ async function runSummary() {
   }
 }
 
-// --- Boot ---
-function boot() {
-  hydrateSettings();
-  setDefaultPeriodFields();
-  setDefaultTransactionDate();
-  // Start on Settings; you can switch tabs after saving
-}
+
 document.addEventListener('DOMContentLoaded', boot);
 
 function boot() {
