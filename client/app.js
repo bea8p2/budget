@@ -439,3 +439,35 @@ function boot() {
   // Start on Settings; you can switch tabs after saving
 }
 document.addEventListener('DOMContentLoaded', boot);
+
+$('prevMonth').addEventListener('click', () => {
+  let year = Number($('sumYear').value);
+  let month = Number($('sumMonth').value);
+
+  month -= 1;
+  if (month < 1) {
+    month = 12;
+    year -= 1;
+  }
+
+  $('sumYear').value = year;
+  $('sumMonth').value = month;
+
+  runSummary();
+});
+
+$('nextMonth').addEventListener('click', () => {
+  let year = Number($('sumYear').value);
+  let month = Number($('sumMonth').value);
+
+  month += 1;
+  if (month > 12) {
+    month = 1;
+    year += 1;
+  }
+
+  $('sumYear').value = year;
+  $('sumMonth').value = month;
+
+  runSummary();
+});
