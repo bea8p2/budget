@@ -373,11 +373,19 @@ function setDefaultPeriodFields() {
   if ($('sumMonth')) $('sumMonth').value = month;
 }
 
-$('loadBudget').onclick = () =>
-  withPending($('loadBudget'), loadBudgetUI);
+// --- Load Budget button ---
+const loadBudgetBtn = $('loadBudget');
+if (loadBudgetBtn) {
+  loadBudgetBtn.onclick = () =>
+    withPending(loadBudgetBtn, loadBudgetUI);
+}
 
-$('saveBudget').onclick = () =>
-  withPending($('saveBudget'), saveBudget);
+// --- Save Budget button ---
+const saveBudgetBtn = $('saveBudget');
+if (saveBudgetBtn) {
+  saveBudgetBtn.onclick = () =>
+    withPending(saveBudgetBtn, saveBudget);
+}
 
 async function loadBudgetUI() {
   try {
