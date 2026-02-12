@@ -78,44 +78,57 @@ tabsNav.addEventListener('click', (e) => {
   $(target).classList.remove('hidden');
 
   if (target === 'accounts') loadAccounts();
-  if (target === 'transactions') { setDefaultTxFilters(); loadAccountsForTx(); loadTransactions(); }
-  if (target === 'budgets') { setDefaultPeriodFields(); loadBudgetUI(); }
+  if (target === 'transactions') { 
+    setDefaultTxFilters(); 
+    loadAccountsForTx(); 
+    loadTransactions(); 
+  }
+  if (target === 'budgets') { 
+    setDefaultPeriodFields(); 
+    loadBudgetUI(); 
+  }
+
   if (target === 'summary') {
-   const now = new Date();
-    $('sumYear').value = now.getFullYear(); $('sumMonth').value = now.getMonth() + 1;
-     runSummary();
-      // Attach scroll listeners (safe because Summary tab is now visible) 
-      $('prevMonth').onclick = () => {
-         let year = Number($('sumYear').value); 
-         let month = Number($('sumMonth').value); 
-         month -= 1; 
-         if (month < 1) { 
-          month = 12; 
-          year -= 1; 
-        } 
-        
-        $('sumYear').value = year; 
-        $('sumMonth').value = month; 
-        
-        runSummary(); 
-      }; 
-      
-      $('nextMonth').onclick = () => { 
-        let year = Number($('sumYear').value); 
-        let month = Number($('sumMonth').value); 
-        
-        month += 1; 
-        if (month > 12) { 
-          month = 1; 
-          year += 1; 
-        } 
-        
-        $('sumYear').value = year; 
-        $('sumMonth').value = month; 
-        
-        runSummary(); 
-      }; 
-    }
+    const now = new Date();
+    $('sumYear').value = now.getFullYear();
+    $('sumMonth').value = now.getMonth() + 1;
+    runSummary();
+
+    // Attach scroll listeners (safe because Summary tab is now visible)
+    $('prevMonth').onclick = () => {
+      let year = Number($('sumYear').value);
+      let month = Number($('sumMonth').value);
+
+      month -= 1;
+      if (month < 1) {
+        month = 12;
+        year -= 1;
+      }
+
+      $('sumYear').value = year;
+      $('sumMonth').value = month;
+
+      runSummary();
+    };
+
+    $('nextMonth').onclick = () => {
+      let year = Number($('sumYear').value);
+      let month = Number($('sumMonth').value);
+
+      month += 1;
+      if (month > 12) {
+        month = 1;
+        year += 1;
+      }
+
+      $('sumYear').value = year;
+      $('sumMonth').value = month;
+
+      runSummary();
+    };
+  }
+});
+
 // --- Settings UI ---
 function hydrateSettings() {
   $('apiBase').value = state.apiBase;
