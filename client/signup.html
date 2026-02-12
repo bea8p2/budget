@@ -21,7 +21,7 @@
 
 <p id="msg"></p>
 
-<!-- Load app.js FIRST so $(), api(), state, etc. exist -->
+<!-- ⭐ Load app.js FIRST -->
 <script type="module" src="./app.js"></script>
 
 <!-- Signup logic -->
@@ -42,7 +42,6 @@ $('signupForm').onsubmit = async (e) => {
       body: { email, password }
     });
 
-    // Backend sets cookie → user is logged in
     window.location.href = '/index.html';
   } catch (err) {
     $('msg').textContent = err.message;
