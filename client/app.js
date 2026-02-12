@@ -398,6 +398,14 @@ async function runSummary() {
   try {
     const y = Number($('sumYear').value);
     const m = Number($('sumMonth').value);
+    // Compute last month
+let lastY = y;
+let lastM = m - 1;
+if (lastM === 0) {
+  lastM = 12;
+  lastY--;
+}
+
     const from = startOfMonth(y, m).toISOString();
     const to = endOfMonth(y, m).toISOString();
 
@@ -405,6 +413,11 @@ async function runSummary() {
 
     // Pull transactions for the month
     const tx = await api(`/transactions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=2000`);
+    // Pull transactions for last month
+    const lastFrom = startOfMonth(lastY, lastM).toISOString();
+    const lastTo = endOfMonth(lastY, lastM).toISOString();
+
+const lastTx = await api(`/transactions?from=${encodeURIComponent(lastFrom)}&to=${encodeURIComponent(lastTo)}&limit=2000`);
 
     // Totals + category grouping
     let totalExpenses = 0;
@@ -429,15 +442,22 @@ async function runSummary() {
     $('sumNet').classList.toggle('danger', net < 0);
     $('sumNet').classList.toggle('success', net >= 0);
 
-    // Top Categories (most negative first)
-    const top = Object.keys(byCategory)
-      .map(cat => ({ cat, spent: byCategory[cat] }))
+    // Top Categories LAST MONTH
+    const lastByCategory = {};
+    lastTx.forEach(t => {
+      if (t.amount < 0) {
+        lastByCategory[t.category] = (lastByCategory[t.category] || 0) + t.amount;
+      }
+    });
+
+    const lastTop = Object.keys(lastByCategory)
+      .map(cat => ({ cat, spent: lastByCategory[cat] }))
       .sort((a, b) => a.spent - b.spent)
       .slice(0, 5);
+$('sumTopCats').innerHTML = lastTop.length
+  ? lastTop.map(c => `<tr><td>${c.cat}</td><td class="right danger">${fmtMoney(c.spent)}</td></tr>`).join('')
+  : `<tr><td colspan="2" class="muted">No expenses last month.</td></tr>`;
 
-    $('sumTopCats').innerHTML = top.length
-      ? top.map(c => `<tr><td>${c.cat}</td><td class="right danger">${fmtMoney(c.spent)}</td></tr>`).join('')
-      : `<tr><td colspan="2" class="muted">No expenses this month.</td></tr>`;
 
 // Budget comparison (optional)
 let budgetDoc = null;
