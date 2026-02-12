@@ -440,34 +440,39 @@ function boot() {
 }
 document.addEventListener('DOMContentLoaded', boot);
 
-$('prevMonth').addEventListener('click', () => {
-  let year = Number($('sumYear').value);
-  let month = Number($('sumMonth').value);
+function boot() {
+  // your existing boot logic...
 
-  month -= 1;
-  if (month < 1) {
-    month = 12;
-    year -= 1;
-  }
+  // Month scroll buttons
+  $('prevMonth').addEventListener('click', () => {
+    let year = Number($('sumYear').value);
+    let month = Number($('sumMonth').value);
 
-  $('sumYear').value = year;
-  $('sumMonth').value = month;
+    month -= 1;
+    if (month < 1) {
+      month = 12;
+      year -= 1;
+    }
 
-  runSummary();
-});
+    $('sumYear').value = year;
+    $('sumMonth').value = month;
 
-$('nextMonth').addEventListener('click', () => {
-  let year = Number($('sumYear').value);
-  let month = Number($('sumMonth').value);
+    runSummary();
+  });
 
-  month += 1;
-  if (month > 12) {
-    month = 1;
-    year += 1;
-  }
+  $('nextMonth').addEventListener('click', () => {
+    let year = Number($('sumYear').value);
+    let month = Number($('sumMonth').value);
 
-  $('sumYear').value = year;
-  $('sumMonth').value = month;
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
 
-  runSummary();
-});
+    $('sumYear').value = year;
+    $('sumMonth').value = month;
+
+    runSummary();
+  });
+}
