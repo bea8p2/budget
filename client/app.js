@@ -80,8 +80,15 @@ tabsNav.addEventListener('click', (e) => {
   if (target === 'accounts') loadAccounts();
   if (target === 'transactions') { setDefaultTxFilters(); loadAccountsForTx(); loadTransactions(); }
   if (target === 'budgets') { setDefaultPeriodFields(); loadBudgetUI(); }
-  if (target === 'summary') { setDefaultPeriodFields(); }
-});
+  if (target === 'summary') { 
+    // Auto-fill current year/month
+     const now = new Date();
+     $('sumYear').value = now.getFullYear();
+      $('sumMonth').value = now.getMonth() + 1;
+      // Optional: auto-run summary immediately 
+      // // runSummary(); 
+      } 
+   });
 
 // --- Settings UI ---
 function hydrateSettings() {
