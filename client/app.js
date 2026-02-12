@@ -439,36 +439,50 @@ async function runSummary() {
       ? top.map(c => `<tr><td>${c.cat}</td><td class="right danger">${fmtMoney(c.spent)}</td></tr>`).join('')
       : `<tr><td colspan="2" class="muted">No expenses this month.</td></tr>`;
 
-    // Budget comparison (optional)
-    let budgetDoc = null;
-    try { budgetDoc = await api(`/budgets/${y}/${m}`); } catch {}
-    const limits = Object.fromEntries((budgetDoc?.limits || []).map(l => [l.category, l.limit]));
+// Budget comparison (optional)
+let budgetDoc = null;
+try { budgetDoc = await api(`/budgets/${y}/${m}`); } catch {}
+const limits = Object.fromEntries((budgetDoc?.limits || []).map(l => [l.category, l.limit]));
 
-    const categories = Object.keys(byCategory).sort((a, b) => byCategory[a] - byCategory[b]);
+const categories = Object.keys(byCategory).sort((a, b) => byCategory[a] - byCategory[b]);
 
-    $('sumRows').innerHTML = categories.length
-      ? categories.map(cat => {
-          const spent = byCategory[cat]; // negative
-          const limit = limits[cat] ?? null;
-          const variance = limit != null ? limit + spent : null; // spent negative
-          return `
-            <tr>
-              <td>${cat}</td>
-              <td class="right danger">${fmtMoney(spent)}</td>
-              <td class="right">${limit != null ? fmtMoney(limit) : ''}</td>
-              <td class="right ${variance != null && variance < 0 ? 'danger' : 'success'}">
-                ${variance != null ? fmtMoney(variance) : ''}
-              </td>
-            </tr>
-          `;
-        }).join('')
-      : `<tr><td colspan="4" class="muted">No expenses this month.</td></tr>`;
+$('sumRows').innerHTML = categories.length
+  ? categories.map(cat => {
+      const spent = byCategory[cat]; // negative
+      const limit = limits[cat] ?? null;
+      const variance = limit != null ? limit + spent : null; // spent negative
 
-    setMsg('sumMsg', '');
-  } catch (err) {
-    setMsg('sumMsg', err.message, 'error');
-  }
-}
+      // compute bar percentage
+      let pct = 0;
+      if (limit != null && limit > 0) {
+        pct = Math.min(100, Math.max(0, (Math.abs(spent) / limit) * 100));
+      }
+
+      // choose bar color
+      let barColor = '#4caf50'; // green (good)
+      if (pct >= 70 && pct < 100) barColor = '#f0ad4e'; // yellow (warning)
+      if (pct >= 100) barColor = '#d9534f'; // red (over budget)
+
+      return `
+        <tr>
+          <td>${cat}</td>
+          <td class="right danger">${fmtMoney(spent)}</td>
+          <td class="right">${limit != null ? fmtMoney(limit) : ''}</td>
+          <td class="right ${variance != null && variance < 0 ? 'danger' : 'success'}">
+            ${variance != null ? fmtMoney(variance) : ''}
+
+            ${limit != null ? `
+              <div class="bar-wrap">
+                <div class="bar-fill" style="width:${pct}%; background:${barColor};"></div>
+              </div>
+            ` : ''}
+          </td>
+        </tr>
+      `;
+    }).join('')
+  : `<tr><td colspan="4" class="muted">No expenses this month.</td></tr>`;
+
+setMsg('sumMsg', '');
 
 // --- Boot ---
 document.addEventListener('DOMContentLoaded', boot);
