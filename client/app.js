@@ -450,18 +450,16 @@ $('sumRows').innerHTML = categories.length
   ? categories.map(cat => {
       const spent = byCategory[cat]; // negative
       const limit = limits[cat] ?? null;
-      const variance = limit != null ? limit + spent : null; // spent negative
+      const variance = limit != null ? limit + spent : null;
 
-      // compute bar percentage
       let pct = 0;
       if (limit != null && limit > 0) {
         pct = Math.min(100, Math.max(0, (Math.abs(spent) / limit) * 100));
       }
 
-      // choose bar color
-      let barColor = '#4caf50'; // green (good)
-      if (pct >= 70 && pct < 100) barColor = '#f0ad4e'; // yellow (warning)
-      if (pct >= 100) barColor = '#d9534f'; // red (over budget)
+      let barColor = '#4caf50';
+      if (pct >= 70 && pct < 100) barColor = '#f0ad4e';
+      if (pct >= 100) barColor = '#d9534f';
 
       return `
         <tr>
@@ -484,11 +482,8 @@ $('sumRows').innerHTML = categories.length
 
 setMsg('sumMsg', '');
 
-// --- Boot ---
-document.addEventListener('DOMContentLoaded', boot);
-
-function boot() {
-  hydrateSettings();
-  setDefaultPeriodFields();
-  setDefaultTransactionDate();
+} catch (err) {
+  setMsg('sumMsg', err.message, 'error');
 }
+
+} // <-- closes runSummary()
