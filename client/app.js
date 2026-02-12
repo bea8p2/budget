@@ -35,10 +35,6 @@ async function withPending(btn, fn) {
   finally { btn.disabled = false; btn.innerText = original; }
 }
 
-function $(id) {
-  return document.getElementById(id);
-}
-
 // --- API helper ---
 async function api(path, options = {}) {
   return fetch(`http://localhost:4000${path}`, {
