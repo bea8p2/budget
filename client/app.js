@@ -431,11 +431,14 @@ async function runSummary() {
   }
 }
 
-
+// --- Boot ---
 document.addEventListener('DOMContentLoaded', boot);
 
 function boot() {
-  // your existing boot logic...
+  // Original boot logic
+  hydrateSettings();
+  setDefaultPeriodFields();
+  setDefaultTransactionDate();
 
   // Month scroll buttons
   $('prevMonth').addEventListener('click', () => {
