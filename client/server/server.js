@@ -1,4 +1,8 @@
 // server/server.js
+
+import dotenv from 'dotenv'; 
+dotenv.config(); // MUST be first
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -7,7 +11,6 @@ import cookieParser from 'cookie-parser';
 
 import { notFoundHandler, errorHandler } from './middleware/error.js';
 
-dotenv.config();
 
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.DB_NAME || 'budget_app';
