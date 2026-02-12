@@ -136,9 +136,8 @@ function hydrateSettings() {
     setMsg('settingsMsg', 'Saved.', 'success');
     setTimeout(() => setMsg('settingsMsg', ''), 1500);
   };
-}
 
-  $('ping').onclick = async () => {
+$('ping').onclick = async () => {
     setMsg('pingResult', 'Testing…');
     try {
       const data = await api('/health');
