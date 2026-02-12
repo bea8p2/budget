@@ -227,7 +227,11 @@ if (addAccountBtn) {
 async function loadAccountsForTx() {
   if (!state.accounts.length) await loadAccounts();
   const sel = $('txAccount');
-  sel.innerHTML = state.accounts.map(a => `<option value="${a._id}">${a.name} (${a.type})</option>`).join('');
+  if (sel) {
+    sel.innerHTML = state.accounts
+      .map(a => `<option value="${a._id}">${a.name} (${a.type})</option>`)
+      .join('');
+  }
 }
 
 function setDefaultTransactionDate() {
@@ -241,50 +245,72 @@ function setDefaultTransactionDate() {
 
 function setDefaultTxFilters() {
   const now = new Date();
-  const fy = $('fltYear'); const fm = $('fltMonth');
+  const fy = $('fltYear');
+  const fm = $('fltMonth');
   if (fy) fy.value = now.getUTCFullYear();
   if (fm) fm.value = now.getUTCMonth() + 1;
+
   const fc = $('fltCategory');
   if (fc && !fc.value) fc.value = '';
+
   setDefaultTransactionDate();
 }
 
-$('addTx').onclick = () =>
-  withPending($('addTx'), async () => {
-    setMsg('txMsg', '');
-    try {
-      const accountId = $('txAccount').value;
-      const date = $('txDate').value;
-      const amount = Number($('txAmount').value);
-      const category = $('txCategory').value.trim();
-      const note = $('txNote').value.trim();
-      if (!accountId || !date || !category || Number.isNaN(amount)) {
-        throw new Error('Account, date, amount, and category are required.');
+// --- Add Transaction ---
+const addTxBtn = $('addTx');
+if (addTxBtn) {
+  addTxBtn.onclick = () =>
+    withPending(addTxBtn, async () => {
+      setMsg('txMsg', '');
+      try {
+        const accountId = $('txAccount').value;
+        const date = $('txDate').value;
+        const amount = Number($('txAmount').value);
+        const category = $('txCategory').value.trim();
+        const note = $('txNote').value.trim();
+
+        if (!accountId || !date || !category || Number.isNaN(amount)) {
+          throw new Error('Account, date, amount, and category are required.');
+        }
+        if (amount === 0) throw new Error('Amount cannot be 0.');
+
+        await api('/transactions', {
+          method: 'POST',
+          body: { accountId, date, amount, category, note }
+        });
+
+        setMsg('txMsg', 'Added.', 'success');
+        $('txDate').value = '';
+        $('txAmount').value = '';
+        $('txCategory').value = '';
+        $('txNote').value = '';
+        $('txCategory').focus();
+
+        await loadTransactions();
+      } catch (err) {
+        setMsg('txMsg', err.message, 'error');
       }
-      if (amount === 0) throw new Error('Amount cannot be 0.');
+    });
+}
 
-      await api('/transactions', { method: 'POST', body: { accountId, date, amount, category, note } });
-      setMsg('txMsg', 'Added.', 'success');
-      $('txDate').value = '';
-      $('txAmount').value = '';
-      $('txCategory').value = '';
-      $('txNote').value = '';
-      $('txCategory').focus();
-      await loadTransactions();
-    } catch (err) {
-      setMsg('txMsg', err.message, 'error');
-    }
-  });
+// --- Apply Filters ---
+const applyFiltersBtn = $('applyFilters');
+if (applyFiltersBtn) {
+  applyFiltersBtn.onclick = () =>
+    withPending(applyFiltersBtn, loadTransactions);
+}
 
-$('applyFilters').onclick = () =>
-  withPending($('applyFilters'), loadTransactions);
+// --- Refresh Transactions ---
+const refreshTxBtn = $('refreshTx');
+if (refreshTxBtn) {
+  refreshTxBtn.onclick = () =>
+    withPending(refreshTxBtn, loadTransactions);
+}
 
-$('refreshTx').onclick = () =>
-  withPending($('refreshTx'), loadTransactions);
-
+// --- Load Transactions ---
 async function loadTransactions() {
   try {
-    const limit = Number($('txLimit').value || 100);
+    const limit = Number(($('txLimit') || {}).value || 100);
 
     const y = Number(($('fltYear') || {}).value || 0);
     const m = Number(($('fltMonth') || {}).value || 0);
@@ -300,32 +326,35 @@ async function loadTransactions() {
 
     setMsg('txMsg', 'Loading…');
     const items = await api(`/transactions${query}`);
-    const rows = $('txRows');
-    rows.innerHTML = items.length
-      ? items.map(t => `
-        <tr>
-          <td>${new Date(t.date).toLocaleDateString()}</td>
-          <td>${state.accountMap[t.accountId]?.name || '—'}</td>
-          <td class="right ${t.amount < 0 ? 'danger' : 'success'}">${fmtMoney(t.amount)}</td>
-          <td>${t.category}</td>
-          <td>${t.note || ''}</td>
-          <td class="right"><button class="small" data-del="${t._id}">Delete</button></td>
-        </tr>
-      `).join('')
-      : `<tr><td colspan="6" class="muted">No transactions found.</td></tr>`;
 
-    // confirm-before-delete
-    rows.querySelectorAll('button[data-del]').forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm('Delete this transaction?')) return;
-        try {
-          await api(`/transactions/${btn.dataset.del}`, { method: 'DELETE' });
-          await loadTransactions();
-        } catch (err) {
-          setMsg('txMsg', err.message, 'error');
-        }
-      };
-    });
+    const rows = $('txRows');
+    if (rows) {
+      rows.innerHTML = items.length
+        ? items.map(t => `
+          <tr>
+            <td>${new Date(t.date).toLocaleDateString()}</td>
+            <td>${state.accountMap[t.accountId]?.name || '—'}</td>
+            <td class="right ${t.amount < 0 ? 'danger' : 'success'}">${fmtMoney(t.amount)}</td>
+            <td>${t.category}</td>
+            <td>${t.note || ''}</td>
+            <td class="right"><button class="small" data-del="${t._id}">Delete</button></td>
+          </tr>
+        `).join('')
+        : `<tr><td colspan="6" class="muted">No transactions found.</td></tr>`;
+
+      // confirm-before-delete
+      rows.querySelectorAll('button[data-del]').forEach(btn => {
+        btn.onclick = async () => {
+          if (!confirm('Delete this transaction?')) return;
+          try {
+            await api(`/transactions/${btn.dataset.del}`, { method: 'DELETE' });
+            await loadTransactions();
+          } catch (err) {
+            setMsg('txMsg', err.message, 'error');
+          }
+        };
+      });
+    }
 
     setMsg('txMsg', '');
   } catch (err) {
