@@ -71,64 +71,82 @@ if (tabsNav) {
   tabsNav.addEventListener('click', (e) => {
     if (e.target.tagName !== 'BUTTON') return;
 
+    // Switch active tab button
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
 
+    // Show selected tab content
     const target = e.target.dataset.tab;
     document.querySelectorAll('.tab').forEach(sec => sec.classList.add('hidden'));
-    $(target).classList.remove('hidden');
+    $(target)?.classList.remove('hidden');
 
+    // Tab-specific loaders
     if (target === 'accounts') loadAccounts();
-    if (target === 'transactions') { 
-      setDefaultTxFilters(); 
-      loadAccountsForTx(); 
-      loadTransactions(); 
+
+    if (target === 'transactions') {
+      setDefaultTxFilters();
+      loadAccountsForTx();
+      loadTransactions();
     }
-    if (target === 'budgets') { 
-      setDefaultPeriodFields(); 
-      loadBudgetUI(); 
+
+    if (target === 'budgets') {
+      setDefaultPeriodFields();
+      loadBudgetUI();
     }
 
     if (target === 'summary') {
       const now = new Date();
-      $('sumYear').value = now.getFullYear();
-      $('sumMonth').value = now.getMonth() + 1;
+      const sumYear = $('sumYear');
+      const sumMonth = $('sumMonth');
+
+      if (sumYear) sumYear.value = now.getFullYear();
+      if (sumMonth) sumMonth.value = now.getMonth() + 1;
+
       runSummary();
 
-      $('prevMonth').onclick = () => {
-        let year = Number($('sumYear').value);
-        let month = Number($('sumMonth').value);
+      // --- Prev Month ---
+      const prevBtn = $('prevMonth');
+      if (prevBtn) {
+        prevBtn.onclick = () => {
+          let year = Number(sumYear.value);
+          let month = Number(sumMonth.value);
 
-        month -= 1;
-        if (month < 1) {
-          month = 12;
-          year -= 1;
-        }
+          month -= 1;
+          if (month < 1) {
+            month = 12;
+            year -= 1;
+          }
 
-        $('sumYear').value = year;
-        $('sumMonth').value = month;
+          sumYear.value = year;
+          sumMonth.value = month;
 
-        runSummary();
-      };
+          runSummary();
+        };
+      }
 
-      $('nextMonth').onclick = () => {
-        let year = Number($('sumYear').value);
-        let month = Number($('sumMonth').value);
+      // --- Next Month ---
+      const nextBtn = $('nextMonth');
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          let year = Number(sumYear.value);
+          let month = Number(sumMonth.value);
 
-        month += 1;
-        if (month > 12) {
-          month = 1;
-          year += 1;
-        }
+          month += 1;
+          if (month > 12) {
+            month = 1;
+            year += 1;
+          }
 
-        $('sumYear').value = year;
-        $('sumMonth').value = month;
+          sumYear.value = year;
+          sumMonth.value = month;
 
-        runSummary();
-      };
+          runSummary();
+        };
+      }
     }
   });
 }
+
 // --- Settings UI ---
 function hydrateSettings() {
   const apiBaseInput = $('apiBase');
@@ -441,7 +459,11 @@ async function saveBudget() {
 }
 
 // --- Summary (Dashboard + Detailed Breakdown in one tab) ---
-$('runSummary').onclick = runSummary;
+
+const runSummaryBtn = $('runSummary');
+if (runSummaryBtn) {
+  runSummaryBtn.onclick = runSummary;
+}
 
 async function runSummary() {
   try {
