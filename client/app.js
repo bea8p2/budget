@@ -35,6 +35,40 @@ async function withPending(btn, fn) {
   finally { btn.disabled = false; btn.innerText = original; }
 }
 
+function $(id) {
+  return document.getElementById(id);
+}
+
+// --- API helper ---
+async function api(path, options = {}) {
+  return fetch(`http://localhost:4000${path}`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+    body: options.body ? JSON.stringify(options.body) : undefined
+  }).then(r => r.json());
+}
+
+// --- NEW: Load budget categories ---
+async function loadBudgetCategories(year, month) {
+  const categories = await api(`/budgets/${year}/${month}/categories`);
+
+  const select = $('txnCategory');
+  select.innerHTML = '';
+
+  if (!categories.length) {
+    select.innerHTML = `<option value="">No budget categories</option>`;
+    return;
+  }
+
+  for (const cat of categories) {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    select.appendChild(opt);
+  }
+}
+
 // --- API wrapper (JWT via HttpOnly cookie, friendly errors) ---
 export async function api(path, { method = 'GET', body } = {}) {
   const url = `${state.apiBase}${path}`;

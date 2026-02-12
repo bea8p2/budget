@@ -71,5 +71,19 @@ router.get(
     res.json(doc);
   })
 );
+router.get('/:year/:month/categories', async (req, res) => {
+  const { year, month } = req.params;
+  const userId = req.user._id;
+
+  const doc = await Budget.findOne({ userId, year, month });
+
+  if (!doc) return res.json([]);
+
+  const categories = doc.limits.map(l => l.category);
+  res.json(categories);
+});
+
+
+
 
 export default router;
