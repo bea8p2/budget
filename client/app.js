@@ -200,25 +200,28 @@ async function loadAccounts() {
   }
 }
 
-$('addAccount').onclick = () =>
-  withPending($('addAccount'), async () => {
-    setMsg('accountMsg', '');
-    try {
-      const name = $('accName').value.trim();
-      const type = $('accType').value;
-      const currency = $('accCurrency').value.trim() || 'USD';
-      if (!name) throw new Error('Name is required');
+const addAccountBtn = $('addAccount');
+if (addAccountBtn) {
+  addAccountBtn.onclick = () =>
+    withPending(addAccountBtn, async () => {
+      setMsg('accountMsg', '');
+      try {
+        const name = $('accName').value.trim();
+        const type = $('accType').value;
+        const currency = $('accCurrency').value.trim() || 'USD';
+        if (!name) throw new Error('Name is required');
 
-      await api('/accounts', { method: 'POST', body: { name, type, currency } });
-      setMsg('accountMsg', 'Account created.', 'success');
-      $('accName').value = '';
-      $('accName').focus();
-      await loadAccounts();
-      await loadAccountsForTx();
-    } catch (err) {
-      setMsg('accountMsg', err.message, 'error');
-    }
-  });
+        await api('/accounts', { method: 'POST', body: { name, type, currency } });
+        setMsg('accountMsg', 'Account created.', 'success');
+        $('accName').value = '';
+        $('accName').focus();
+        await loadAccounts();
+        await loadAccountsForTx();
+      } catch (err) {
+        setMsg('accountMsg', err.message, 'error');
+      }
+    });
+}
 
 // --- Transactions ---
 async function loadAccountsForTx() {
