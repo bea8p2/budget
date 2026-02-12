@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import cookieParser from 'cookie-parser';
 
 import { notFoundHandler, errorHandler } from './middleware/error.js';
 
@@ -22,19 +23,25 @@ console.log('DEBUG DB_NAME:', dbName);
 
 async function start() {
   try {
-    // Connect using dbName option (cleaner than URI concatenation)
     await mongoose.connect(uri, { dbName });
     console.log('✅ MongoDB connected');
 
-    // Register models so indexes & validators are in place
     await import('./models/User.js');
     await import('./models/Account.js');
     await import('./models/Transaction.js');
     await import('./models/Budget.js');
 
     const app = express();
-    app.use(cors());
+
+    // ⭐⭐⭐ CORS MUST BE HERE — BEFORE ANY ROUTES ⭐⭐⭐
+    app.use(cors({
+      origin: 'http://localhost:3000',
+      credentials: true
+    }));
+
+    // ⭐ Required for cookies + JSON bodies
     app.use(express.json());
+    app.use(cookieParser());
 
     // Health check
     app.get('/health', (_req, res) => {
@@ -47,7 +54,6 @@ async function start() {
     app.use('/transactions', (await import('./routes/transactions.js')).default);
     app.use('/budgets', (await import('./routes/budgets.js')).default);
 
-    // Friendly errors: 404 first, then central formatter
     app.use(notFoundHandler);
     app.use(errorHandler);
 
