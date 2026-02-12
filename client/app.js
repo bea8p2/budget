@@ -36,7 +36,7 @@ async function withPending(btn, fn) {
 }
 
 // --- API wrapper (JWT via HttpOnly cookie, friendly errors) ---
-async function api(path, { method = 'GET', body } = {}) {
+export async function api(path, { method = 'GET', body } = {}) {
   const url = `${state.apiBase}${path}`;
 
   const headers = {};
