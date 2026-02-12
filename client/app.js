@@ -66,103 +66,68 @@ export async function api(path, { method = 'GET', body } = {}) {
 
 // --- Tabs ---
 const tabsNav = $('tabs');
-tabsNav.addEventListener('click', (e) => {
-  if (e.target.tagName !== 'BUTTON') return;
 
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  e.target.classList.add('active');
+if (tabsNav) {
+  tabsNav.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
 
-  const target = e.target.dataset.tab;
-  document.querySelectorAll('.tab').forEach(sec => sec.classList.add('hidden'));
-  $(target).classList.remove('hidden');
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
 
-  if (target === 'accounts') loadAccounts();
-  if (target === 'transactions') { 
-    setDefaultTxFilters(); 
-    loadAccountsForTx(); 
-    loadTransactions(); 
-  }
-  if (target === 'budgets') { 
-    setDefaultPeriodFields(); 
-    loadBudgetUI(); 
-  }
+    const target = e.target.dataset.tab;
+    document.querySelectorAll('.tab').forEach(sec => sec.classList.add('hidden'));
+    $(target).classList.remove('hidden');
 
-  if (target === 'summary') {
-    const now = new Date();
-    $('sumYear').value = now.getFullYear();
-    $('sumMonth').value = now.getMonth() + 1;
-    runSummary();
-
-    // Attach scroll listeners (safe because Summary tab is now visible)
-    $('prevMonth').onclick = () => {
-      let year = Number($('sumYear').value);
-      let month = Number($('sumMonth').value);
-
-      month -= 1;
-      if (month < 1) {
-        month = 12;
-        year -= 1;
-      }
-
-      $('sumYear').value = year;
-      $('sumMonth').value = month;
-
-      runSummary();
-    };
-
-    $('nextMonth').onclick = () => {
-      let year = Number($('sumYear').value);
-      let month = Number($('sumMonth').value);
-
-      month += 1;
-      if (month > 12) {
-        month = 1;
-        year += 1;
-      }
-
-      $('sumYear').value = year;
-      $('sumMonth').value = month;
-
-      runSummary();
-    };
-  }
-});
-
-function hydrateSettings() {
-  $('apiBase').value = state.apiBase;
-
-  $('saveSettings').onclick = () => {
-    saveSettings();
-    setMsg('settingsMsg', 'Saved.', 'success');
-    setTimeout(() => setMsg('settingsMsg', ''), 1500);
-  };
-
-$('ping').onclick = async () => {
-    setMsg('pingResult', 'Testing…');
-    try {
-      const data = await api('/health');
-      setMsg('pingResult', `Connected: ${JSON.stringify(data)}`, 'success');
-    } catch (err) {
-      setMsg('pingResult', err.message, 'error');
+    if (target === 'accounts') loadAccounts();
+    if (target === 'transactions') { 
+      setDefaultTxFilters(); 
+      loadAccountsForTx(); 
+      loadTransactions(); 
     }
-  };
+    if (target === 'budgets') { 
+      setDefaultPeriodFields(); 
+      loadBudgetUI(); 
+    }
 
-  // Optional presets (only if buttons exist in HTML)
-  const useLocal = $('useLocal');
-  if (useLocal) {
-    useLocal.onclick = () => {
-      $('apiBase').value = 'http://localhost:4000';
-      $('saveSettings').click();
-    };
-  }
-  const useProd = $('useProd');
-  if (useProd) {
-    useProd.onclick = () => {
-      // Replace with your deployed API later
-      $('apiBase').value = 'https://your-api.onrender.com';
-      $('saveSettings').click();
-    };
-  }
+    if (target === 'summary') {
+      const now = new Date();
+      $('sumYear').value = now.getFullYear();
+      $('sumMonth').value = now.getMonth() + 1;
+      runSummary();
+
+      $('prevMonth').onclick = () => {
+        let year = Number($('sumYear').value);
+        let month = Number($('sumMonth').value);
+
+        month -= 1;
+        if (month < 1) {
+          month = 12;
+          year -= 1;
+        }
+
+        $('sumYear').value = year;
+        $('sumMonth').value = month;
+
+        runSummary();
+      };
+
+      $('nextMonth').onclick = () => {
+        let year = Number($('sumYear').value);
+        let month = Number($('sumMonth').value);
+
+        month += 1;
+        if (month > 12) {
+          month = 1;
+          year += 1;
+        }
+
+        $('sumYear').value = year;
+        $('sumMonth').value = month;
+
+        runSummary();
+      };
+    }
+  });
 }
 
 // --- Accounts ---
