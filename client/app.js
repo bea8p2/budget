@@ -129,6 +129,53 @@ if (tabsNav) {
     }
   });
 }
+// --- Settings UI ---
+function hydrateSettings() {
+  const apiBaseInput = $('apiBase');
+  if (apiBaseInput) {
+    apiBaseInput.value = state.apiBase;
+  }
+
+  const saveBtn = $('saveSettings');
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      saveSettings();
+      setMsg('settingsMsg', 'Saved.', 'success');
+      setTimeout(() => setMsg('settingsMsg', ''), 1500);
+    };
+  }
+}
+
+// --- Ping button (only if present) ---
+const pingBtn = $('ping');
+if (pingBtn) {
+  pingBtn.onclick = async () => {
+    setMsg('pingResult', 'Testing…');
+    try {
+      const data = await api('/health');
+      setMsg('pingResult', `Connected: ${JSON.stringify(data)}`, 'success');
+    } catch (err) {
+      setMsg('pingResult', err.message, 'error');
+    }
+  };
+}
+
+// --- Optional presets (only if present) ---
+const useLocal = $('useLocal');
+if (useLocal) {
+  useLocal.onclick = () => {
+    $('apiBase').value = 'http://localhost:4000';
+    $('saveSettings').click();
+  };
+}
+
+const useProd = $('useProd');
+if (useProd) {
+  useProd.onclick = () => {
+    $('apiBase').value = 'https://your-api.onrender.com';
+    $('saveSettings').click();
+  };
+}
 
 // --- Accounts ---
 async function loadAccounts() {
