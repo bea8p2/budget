@@ -86,7 +86,7 @@ tabsNav.addEventListener('click', (e) => {
      $('sumYear').value = now.getFullYear();
       $('sumMonth').value = now.getMonth() + 1;
       // Optional: auto-run summary immediately 
-      // // runSummary(); 
+      runSummary(); 
       } 
    });
 
