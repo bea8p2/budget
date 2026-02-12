@@ -1,18 +1,15 @@
 // --- Simple state & helpers ---
 const $ = (id) => document.getElementById(id);
+
 const state = {
   apiBase: localStorage.getItem('API_BASE') || 'http://localhost:4000',
-  demoUser: localStorage.getItem('DEMO_USER') || '64f000000000000000000001',
   accounts: [],
-  accountMap: {},
-  token: localStorage.getItem('JWT_TOKEN') || '' // (for later JWT auth)
+  accountMap: {}
 };
 
 function saveSettings() {
   state.apiBase = $('apiBase').value.trim();
-  state.demoUser = $('demoUser').value.trim();
   localStorage.setItem('API_BASE', state.apiBase);
-  localStorage.setItem('DEMO_USER', state.demoUser);
 }
 
 function fmtMoney(n, currency = 'USD') {
@@ -38,20 +35,18 @@ async function withPending(btn, fn) {
   finally { btn.disabled = false; btn.innerText = original; }
 }
 
-// --- API wrapper (demo auth header for now, friendly errors) ---
+// --- API wrapper (JWT via HttpOnly cookie, friendly errors) ---
 async function api(path, { method = 'GET', body } = {}) {
   const url = `${state.apiBase}${path}`;
-  const headers = {};
-  // When JWT exists later:
-  if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
-  else headers['x-demo-user'] = state.demoUser;
 
+  const headers = {};
   if (body) headers['Content-Type'] = 'application/json';
 
   const res = await fetch(url, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include'   // ⭐ send cookies with every request
   });
 
   const text = await res.text();
@@ -59,9 +54,13 @@ async function api(path, { method = 'GET', body } = {}) {
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
 
   if (!res.ok) {
-    const msg = (data && data.error) ? data.error : (typeof data === 'string' && data ? data : `${res.status} ${res.statusText}`);
+    const msg =
+      (data && data.error)
+        ? data.error
+        : (typeof data === 'string' && data ? data : `${res.status} ${res.statusText}`);
     throw new Error(msg);
   }
+
   return data;
 }
 
@@ -129,16 +128,15 @@ tabsNav.addEventListener('click', (e) => {
   }
 });
 
-// --- Settings UI ---
 function hydrateSettings() {
   $('apiBase').value = state.apiBase;
-  $('demoUser').value = state.demoUser;
 
   $('saveSettings').onclick = () => {
     saveSettings();
     setMsg('settingsMsg', 'Saved.', 'success');
     setTimeout(() => setMsg('settingsMsg', ''), 1500);
   };
+}
 
   $('ping').onclick = async () => {
     setMsg('pingResult', 'Testing…');

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sign Up</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<h2>Create an Account</h2>
+
+<form id="signupForm">
+  <label>Email</label>
+  <input type="email" id="email" required>
+
+  <label>Password</label>
+  <input type="password" id="password" required>
+
+  <button type="submit">Sign Up</button>
+</form>
+
+<p id="msg"></p>
+
+<script type="module">
+import { api } from './app.js';
+
+document.getElementById('signupForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const email = email.value.trim();
+  const password = password.value.trim();
+
+  try {
+    const res = await api('/auth/register', {
+      method: 'POST',
+      body: { email, password }
+    });
+
+    // Auto-login happens on backend (cookie set)
+    window.location.href = '/index.html';
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+};
+</script>
+
+</body>
+</html>
