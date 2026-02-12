@@ -65,35 +65,6 @@ async function loadBudgetCategories(year, month) {
   }
 }
 
-// --- API wrapper (JWT via HttpOnly cookie, friendly errors) ---
-export async function api(path, { method = 'GET', body } = {}) {
-  const url = `${state.apiBase}${path}`;
-
-  const headers = {};
-  if (body) headers['Content-Type'] = 'application/json';
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: 'include'   // ⭐ send cookies with every request
-  });
-
-  const text = await res.text();
-  let data;
-  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-
-  if (!res.ok) {
-    const msg =
-      (data && data.error)
-        ? data.error
-        : (typeof data === 'string' && data ? data : `${res.status} ${res.statusText}`);
-    throw new Error(msg);
-  }
-
-  return data;
-}
-
 // --- Tabs ---
 const tabsNav = $('tabs');
 
