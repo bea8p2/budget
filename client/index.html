@@ -235,17 +235,20 @@
 </div>
 
 
-  <!-- SUMMARY (Dashboard + Detailed Breakdown) -->
+ <!-- SUMMARY (Dashboard + Detailed Breakdown) -->
 <section id="summary" class="tab hidden">
   <div class="grid">
 
     <!-- Month Snapshot -->
     <div class="card">
       <h3>Month Snapshot</h3>
+
       <div class="row" style="align-items: flex-end; justify-content: space-between;">
         
+        <!-- Prev button -->
         <button id="prevMonth" class="small">←</button>
 
+        <!-- Year + Month inputs -->
         <div class="row" style="gap: 12px;">
           <div>
             <label for="sumYear">Year</label>
@@ -257,7 +260,9 @@
           </div>
         </div>
 
+        <!-- Next button -->
         <button id="nextMonth" class="small">→</button>
+
       </div>
 
       <div class="muted small">Computed client‑side using your transactions.</div>
@@ -273,7 +278,7 @@
         </div>
         <div class="card">
           <div class="muted small">Net</div>
-          <h2 id="sumTotal">–</h2> <!-- ⭐ FIXED -->
+          <h2 id="sumTotal">–</h2>
         </div>
       </div>
 
@@ -289,7 +294,7 @@
       </table>
     </div>
 
-    <!-- ⭐ ADDED CATEGORY CHART -->
+    <!-- Category Chart -->
     <div class="card" style="grid-column: 1 / -1;">
       <h3>Category Breakdown Chart</h3>
       <div id="sumChart" style="height:240px;"></div>
