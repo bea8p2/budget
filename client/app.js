@@ -319,8 +319,6 @@ if (addTxBtn) {
 }
 
 // --- Apply Filters ---
-const applyFiltersBtn = $('applyFilters');
-
 
 const applyFiltersBtn = $('applyFilters');
 if (applyFiltersBtn) {
