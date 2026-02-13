@@ -530,12 +530,19 @@ function renderBudgetRows(limits) {
 
   // EDIT HANDLERS
   rows.querySelectorAll('button[data-edit]').forEach(btn => {
-    btn.onclick = () => enterEditMode(btn.dataset.edit, limits);
+    btn.onclick = () => enterEditMode(btn.dataset.edit);
   });
 }
 
 //In-line Editing
-function enterEditMode(index, limits) {
+async function enterEditMode(index) {
+  const y = Number($('bdgYear').value);
+  const m = Number($('bdgMonth').value);
+
+  // Always fetch the latest version
+  const doc = await api(`/budgets/${y}/${m}`);
+  const limits = doc.limits || [];
+
   const row = $('bdgRows').querySelector(`tr[data-index="${index}"]`);
   const item = limits[index];
 
@@ -548,14 +555,19 @@ function enterEditMode(index, limits) {
     </td>
   `;
 
-  $('saveEdit').onclick = () => saveEdit(index, limits);
+  $('saveEdit').onclick = () => saveEdit(index);
   $('cancelEdit').onclick = () => renderBudgetRows(limits);
 }
 
+
 //Save Edit Validation
-async function saveEdit(index, limits) {
+async function saveEdit(index) {
   const y = Number($('bdgYear').value);
   const m = Number($('bdgMonth').value);
+
+  // Always fetch the latest version
+  const doc = await api(`/budgets/${y}/${m}`);
+  const limits = doc.limits || [];
 
   const category = $('editCat').value.trim();
   const limit = Number($('editLimit').value);
@@ -598,7 +610,6 @@ async function saveEdit(index, limits) {
 
   renderBudgetRows(updated.limits);
 }
-
 
 
 // --- Summary (Dashboard + Detailed Breakdown in one tab) ---
