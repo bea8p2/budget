@@ -435,6 +435,18 @@ if (sortSelect) {
   };
 }
 
+// --- Auto-load when year or month changes ---
+const bdgYear = $('bdgYear');
+const bdgMonth = $('bdgMonth');
+
+if (bdgYear) {
+  bdgYear.onchange = () => loadBudgetUI();
+}
+
+if (bdgMonth) {
+  bdgMonth.onchange = () => loadBudgetUI();
+}
+
 
 // --- Load Budget UI ---
 async function loadBudgetUI() {
