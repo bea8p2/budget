@@ -486,7 +486,7 @@ async function addBudgetLine() {
   }
 }
 
-// --- Render Budget Rows (with delete buttons) ---
+// --- Render Budget Rows (with delete + edit buttons) ---
 function renderBudgetRows(limits) {
   const rows = $('bdgRows');
 
@@ -530,11 +530,13 @@ function renderBudgetRows(limits) {
 
   // EDIT HANDLERS
   rows.querySelectorAll('button[data-edit]').forEach(btn => {
-    btn.onclick = () => enterEditMode(btn.dataset.edit);
+    btn.onclick = () => enterEditMode(Number(btn.dataset.edit));
   });
 }
 
-//In-line Editing
+
+
+// --- Inline Editing ---
 async function enterEditMode(index) {
   const y = Number($('bdgYear').value);
   const m = Number($('bdgMonth').value);
@@ -560,7 +562,8 @@ async function enterEditMode(index) {
 }
 
 
-//Save Edit Validation
+
+// --- Save Edit + Validation ---
 async function saveEdit(index) {
   const y = Number($('bdgYear').value);
   const m = Number($('bdgMonth').value);
@@ -586,7 +589,7 @@ async function saveEdit(index) {
     return;
   }
 
-  // Prevent duplicates
+  // Prevent duplicates EXCEPT the row being edited
   const duplicate = limits.some((l, i) =>
     i !== index && l.category.toLowerCase() === category.toLowerCase()
   );
