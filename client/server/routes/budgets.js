@@ -48,6 +48,30 @@ router.put(
   })
 );
 
+/**
+ * GET /budgets/:year/:month
+ */
+router.get(
+  '/:year/:month',
+  asyncHandler(async (req, res) => {
+    const year = Number(req.params.year);
+    const month = Number(req.params.month);
+
+    if (!Number.isInteger(year) || !Number.isInteger(month)) {
+      throw badRequest('Year and month must be integers.');
+    }
+
+    const doc = await Budget.findOne({
+      userId: req.user.id,
+      'period.year': year,
+      'period.month': month
+    });
+
+    if (!doc) throw notFoundErr('No budget for this month.');
+    res.json(doc);
+  })
+);
+
 router.get('/:year/:month/categories', asyncHandler(async (req, res) => {
   const year = Number(req.params.year);
   const month = Number(req.params.month);
@@ -63,6 +87,7 @@ router.get('/:year/:month/categories', asyncHandler(async (req, res) => {
   const categories = doc.limits.map(l => l.category);
   res.json(categories);
 }));
+
 
 
 export default router;
