@@ -87,8 +87,14 @@ if (tabsNav) {
     if (target === 'transactions') {
       setDefaultTxFilters();
       loadAccountsForTx();
+
+      const y = Number(($('fltYear') || {}).value || 0);
+      const m = Number(($('fltMonth') || {}).value || 0);
+
+      loadBudgetCategories(y, m);   // ⭐ ADD THIS
       loadTransactions();
-    }
+}
+
 
     if (target === 'budgets') {
       setDefaultPeriodFields();
