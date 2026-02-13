@@ -319,14 +319,20 @@ if (addTxBtn) {
 }
 
 // --- Apply Filters ---
-applyFiltersBtn.onclick = () =>
-  withPending(applyFiltersBtn, async () => {
-    const y = Number(($('fltYear') || {}).value || 0);
-    const m = Number(($('fltMonth') || {}).value || 0);
+const applyFiltersBtn = $('applyFilters');
 
-    await loadBudgetCategories(y, m);   // ⭐ ADD THIS
-    await loadTransactions();
-  });
+
+const applyFiltersBtn = $('applyFilters');
+if (applyFiltersBtn) {
+  applyFiltersBtn.onclick = () =>
+    withPending(applyFiltersBtn, async () => {
+      const y = Number(($('fltYear') || {}).value || 0);
+      const m = Number(($('fltMonth') || {}).value || 0);
+
+      await loadBudgetCategories(y, m);
+      await loadTransactions();
+    });
+}
 
 // --- Refresh Transactions ---
 const refreshTxBtn = $('refreshTx');
