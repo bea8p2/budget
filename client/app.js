@@ -419,6 +419,23 @@ if (addBudgetBtn) {
     withPending(addBudgetBtn, addBudgetLine);
 }
 
+//Sort Dropdown
+const sortSelect = $('bdgSort');
+if (sortSelect) {
+  sortSelect.onchange = async () => {
+    const y = Number($('bdgYear').value);
+    const m = Number($('bdgMonth').value);
+
+    try {
+      const doc = await api(`/budgets/${y}/${m}`);
+      renderBudgetRows(doc.limits || []);
+    } catch {
+      // ignore if no budget yet
+    }
+  };
+}
+
+
 // --- Load Budget UI ---
 async function loadBudgetUI() {
   try {
@@ -486,7 +503,31 @@ async function addBudgetLine() {
   }
 }
 
-// --- Render Budget Rows (with delete + edit buttons) ---
+// --- Sorting Helper ---
+function sortLimits(limits) {
+  const mode = $('bdgSort')?.value || 'recent';
+  const arr = [...limits]; // never mutate original
+
+  switch (mode) {
+    case 'alpha':
+      return arr.sort((a, b) =>
+        a.category.localeCompare(b.category)
+      );
+
+    case 'largest':
+      return arr.sort((a, b) => b.limit - a.limit);
+
+    case 'smallest':
+      return arr.sort((a, b) => a.limit - b.limit);
+
+    case 'recent':
+    default:
+      return arr; // original order
+  }
+}
+
+
+// --- Render Budget Rows (with delete + edit buttons + sorting) ---
 function renderBudgetRows(limits) {
   const rows = $('bdgRows');
 
@@ -496,7 +537,10 @@ function renderBudgetRows(limits) {
     return;
   }
 
-  rows.innerHTML = limits
+  // ⭐ Apply sorting
+  const sorted = sortLimits(limits);
+
+  rows.innerHTML = sorted
     .map((l, i) => `
       <tr data-index="${i}">
         <td>${l.category}</td>

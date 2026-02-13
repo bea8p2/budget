@@ -207,15 +207,33 @@
       <!-- ⭐ NEW UI ENDS HERE -->
     </div>
 
-    <div class="card">
-      <h3>Current Month Limits</h3>
-      <table>
-        <thead><tr><th>Category</th><th class="right">Limit</th></tr></thead>
-        <tbody id="bdgRows"></tbody>
-      </table>
-    </div>
+ <div class="card">
+  <h3>Current Month Limits</h3>
+
+  <!-- ⭐ SORT DROPDOWN GOES HERE -->
+  <div class="row" style="justify-content: flex-end; margin-bottom: 8px;">
+    <label for="bdgSort" style="margin-right: 8px;">Sort:</label>
+    <select id="bdgSort">
+      <option value="recent">Recently Added</option>
+      <option value="alpha">Alphabetical (A–Z)</option>
+      <option value="largest">Largest → Smallest</option>
+      <option value="smallest">Smallest → Largest</option>
+    </select>
   </div>
-</section>
+  <!-- ⭐ END SORT DROPDOWN -->
+
+  <table>
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th class="right">Limit</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="bdgRows"></tbody>
+  </table>
+</div>
+
 
 
   <!-- SUMMARY (Dashboard + Detailed Breakdown) -->
