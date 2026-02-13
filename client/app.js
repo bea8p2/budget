@@ -313,11 +313,14 @@ if (addTxBtn) {
 }
 
 // --- Apply Filters ---
-const applyFiltersBtn = $('applyFilters');
-if (applyFiltersBtn) {
-  applyFiltersBtn.onclick = () =>
-    withPending(applyFiltersBtn, loadTransactions);
-}
+applyFiltersBtn.onclick = () =>
+  withPending(applyFiltersBtn, async () => {
+    const y = Number(($('fltYear') || {}).value || 0);
+    const m = Number(($('fltMonth') || {}).value || 0);
+
+    await loadBudgetCategories(y, m);   // ⭐ ADD THIS
+    await loadTransactions();
+  });
 
 // --- Refresh Transactions ---
 const refreshTxBtn = $('refreshTx');
