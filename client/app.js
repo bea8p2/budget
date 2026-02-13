@@ -498,21 +498,21 @@ function renderBudgetRows(limits) {
 
   rows.innerHTML = limits
     .map((l, i) => `
-      <tr>
+      <tr data-index="${i}">
         <td>${l.category}</td>
         <td class="right">${fmtMoney(l.limit)}</td>
         <td class="right">
+          <button class="small" data-edit="${i}">Edit</button>
           <button class="small danger" data-del="${i}">Delete</button>
         </td>
       </tr>
     `)
     .join('');
 
-  // Attach delete handlers
+  // DELETE HANDLERS
   rows.querySelectorAll('button[data-del]').forEach(btn => {
     btn.onclick = async () => {
       const index = Number(btn.dataset.del);
-
       const y = Number($('bdgYear').value);
       const m = Number($('bdgMonth').value);
 
@@ -527,7 +527,79 @@ function renderBudgetRows(limits) {
       renderBudgetRows(updated.limits);
     };
   });
+
+  // EDIT HANDLERS
+  rows.querySelectorAll('button[data-edit]').forEach(btn => {
+    btn.onclick = () => enterEditMode(btn.dataset.edit, limits);
+  });
 }
+
+//In-line Editing
+function enterEditMode(index, limits) {
+  const row = $('bdgRows').querySelector(`tr[data-index="${index}"]`);
+  const item = limits[index];
+
+  row.innerHTML = `
+    <td><input id="editCat" value="${item.category}" /></td>
+    <td class="right"><input id="editLimit" type="number" value="${item.limit}" /></td>
+    <td class="right">
+      <button class="small" id="saveEdit">Save</button>
+      <button class="small" id="cancelEdit">Cancel</button>
+    </td>
+  `;
+
+  $('saveEdit').onclick = () => saveEdit(index, limits);
+  $('cancelEdit').onclick = () => renderBudgetRows(limits);
+}
+
+//Save Edit Validation
+async function saveEdit(index, limits) {
+  const y = Number($('bdgYear').value);
+  const m = Number($('bdgMonth').value);
+
+  const category = $('editCat').value.trim();
+  const limit = Number($('editLimit').value);
+
+  // VALIDATION
+  if (!category) {
+    setMsg('bdgMsg', 'Category cannot be empty.', 'error');
+    return;
+  }
+  if (Number.isNaN(limit)) {
+    setMsg('bdgMsg', 'Limit must be a number.', 'error');
+    return;
+  }
+  if (limit < 0) {
+    setMsg('bdgMsg', 'Limit must be zero or greater.', 'error');
+    return;
+  }
+
+  // Prevent duplicates
+  const duplicate = limits.some((l, i) =>
+    i !== index && l.category.toLowerCase() === category.toLowerCase()
+  );
+  if (duplicate) {
+    setMsg('bdgMsg', 'That category already exists.', 'error');
+    return;
+  }
+
+  // APPLY EDIT
+  const newLimits = limits.map((l, i) =>
+    i === index ? { category, limit } : l
+  );
+
+  const updated = await api(`/budgets/${y}/${m}`, {
+    method: 'PUT',
+    body: { limits: newLimits }
+  });
+
+  setMsg('bdgMsg', 'Updated.', 'success');
+  setTimeout(() => setMsg('bdgMsg', ''), 1500);
+
+  renderBudgetRows(updated.limits);
+}
+
+
 
 // --- Summary (Dashboard + Detailed Breakdown in one tab) ---
 
