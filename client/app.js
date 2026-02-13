@@ -412,26 +412,29 @@ if (loadBudgetBtn) {
     withPending(loadBudgetBtn, loadBudgetUI);
 }
 
-// --- Save Budget button ---
-const saveBudgetBtn = $('saveBudget');
-if (saveBudgetBtn) {
-  saveBudgetBtn.onclick = () =>
-    withPending(saveBudgetBtn, saveBudget);
+// --- Add Budget Line button ---
+const addBudgetBtn = $('addBudgetLine');
+if (addBudgetBtn) {
+  addBudgetBtn.onclick = () =>
+    withPending(addBudgetBtn, addBudgetLine);
 }
 
+// --- Load Budget UI ---
 async function loadBudgetUI() {
   try {
     const y = Number($('bdgYear').value);
     const m = Number($('bdgMonth').value);
+
     setMsg('bdgMsg', 'Loading…');
+
     const doc = await api(`/budgets/${y}/${m}`);
-    const lines = (doc.limits || []).map(l => `${l.category},${l.limit}`).join('\n');
-    $('bdgLines').value = lines;
     renderBudgetRows(doc.limits || []);
+
     setMsg('bdgMsg', '');
   } catch (err) {
-    $('bdgLines').value = '';
-    $('bdgRows').innerHTML = `<tr><td colspan="2" class="muted">No budget set for this month.</td></tr>`;
+    $('bdgRows').innerHTML =
+      `<tr><td colspan="3" class="muted">No budget set for this month.</td></tr>`;
+
     if (String(err.message).includes('No budget')) {
       setMsg('bdgMsg', 'No budget for this month yet.', 'info');
     } else {
@@ -440,36 +443,90 @@ async function loadBudgetUI() {
   }
 }
 
-function parseBudgetLines() {
-  return $('bdgLines').value
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      const [category, limit] = line.split(',').map(s => s.trim());
-      return { category, limit: Number(limit) };
-    })
-    .filter(x => x.category && !Number.isNaN(x.limit));
-}
-
-function renderBudgetRows(limits) {
-  $('bdgRows').innerHTML = (limits && limits.length)
-    ? limits.map(l => `<tr><td>${l.category}</td><td class="right">${fmtMoney(l.limit)}</td></tr>`).join('')
-    : `<tr><td colspan="2" class="muted">No categories yet.</td></tr>`;
-}
-
-async function saveBudget() {
+// --- Add a single budget line ---
+async function addBudgetLine() {
   try {
     const y = Number($('bdgYear').value);
     const m = Number($('bdgMonth').value);
-    const limits = parseBudgetLines();
-    const doc = await api(`/budgets/${y}/${m}`, { method: 'PUT', body: { limits } });
-    renderBudgetRows(doc.limits || []);
-    setMsg('bdgMsg', 'Saved.', 'success');
+
+    const category = $('bdgCategory').value.trim();
+    const limit = Number($('bdgLimit').value);
+
+    if (!category || Number.isNaN(limit)) {
+      setMsg('bdgMsg', 'Category and limit are required.', 'error');
+      return;
+    }
+
+    // Load existing budget or create empty
+    let doc;
+    try {
+      doc = await api(`/budgets/${y}/${m}`);
+    } catch {
+      doc = { limits: [] };
+    }
+
+    const newLimits = [...(doc.limits || []), { category, limit }];
+
+    const updated = await api(`/budgets/${y}/${m}`, {
+      method: 'PUT',
+      body: { limits: newLimits }
+    });
+
+    renderBudgetRows(updated.limits);
+
+    $('bdgCategory').value = '';
+    $('bdgLimit').value = '';
+    $('bdgCategory').focus();
+
+    setMsg('bdgMsg', 'Added.', 'success');
     setTimeout(() => setMsg('bdgMsg', ''), 1500);
+
   } catch (err) {
     setMsg('bdgMsg', err.message, 'error');
   }
+}
+
+// --- Render Budget Rows (with delete buttons) ---
+function renderBudgetRows(limits) {
+  const rows = $('bdgRows');
+
+  if (!limits || !limits.length) {
+    rows.innerHTML =
+      `<tr><td colspan="3" class="muted">No categories yet.</td></tr>`;
+    return;
+  }
+
+  rows.innerHTML = limits
+    .map((l, i) => `
+      <tr>
+        <td>${l.category}</td>
+        <td class="right">${fmtMoney(l.limit)}</td>
+        <td class="right">
+          <button class="small danger" data-del="${i}">Delete</button>
+        </td>
+      </tr>
+    `)
+    .join('');
+
+  // Attach delete handlers
+  rows.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.onclick = async () => {
+      const index = Number(btn.dataset.del);
+
+      const y = Number($('bdgYear').value);
+      const m = Number($('bdgMonth').value);
+
+      const doc = await api(`/budgets/${y}/${m}`);
+      const newLimits = doc.limits.filter((_, i) => i !== index);
+
+      const updated = await api(`/budgets/${y}/${m}`, {
+        method: 'PUT',
+        body: { limits: newLimits }
+      });
+
+      renderBudgetRows(updated.limits);
+    };
+  });
 }
 
 // --- Summary (Dashboard + Detailed Breakdown in one tab) ---
