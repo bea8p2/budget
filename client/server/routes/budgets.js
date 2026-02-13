@@ -10,10 +10,6 @@ router.use(requireAuth);
 /**
  * PUT /budgets/:year/:month
  * body: { limits: [{ category, limit }] }
- * validations:
- *  - year: integer (1900–3000)
- *  - month: integer 1..12
- *  - limits: array; each item requires non-empty category and numeric limit
  */
 router.put(
   '/:year/:month',
@@ -31,6 +27,7 @@ router.put(
     if (!Array.isArray(limits)) {
       throw badRequest('limits must be an array of { category, limit }.');
     }
+
     for (const row of limits) {
       const category = (row?.category ?? '').toString().trim();
       const limit = Number(row?.limit);
@@ -72,22 +69,26 @@ router.get(
   })
 );
 
-router.get('/:year/:month/categories', asyncHandler(async (req, res) => {
-  const year = Number(req.params.year);
-  const month = Number(req.params.month);
+/**
+ * GET /budgets/:year/:month/categories
+ */
+router.get(
+  '/:year/:month/categories',
+  asyncHandler(async (req, res) => {
+    const year = Number(req.params.year);
+    const month = Number(req.params.month);
 
-  const doc = await Budget.findOne({
-    userId: req.user.id,
-    'period.year': year,
-    'period.month': month
-  });
+    const doc = await Budget.findOne({
+      userId: req.user.id,
+      'period.year': year,
+      'period.month': month
+    });
 
-  if (!doc) return res.json([]);
+    if (!doc) return res.json([]);
 
-  const categories = doc.limits.map(l => l.category);
-  res.json(categories);
-}));
-
-
+    const categories = doc.limits.map(l => l.category);
+    res.json(categories);
+  })
+);
 
 export default router;
