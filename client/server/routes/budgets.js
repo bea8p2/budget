@@ -65,5 +65,4 @@ router.get('/:year/:month/categories', asyncHandler(async (req, res) => {
 }));
 
 
-
 export default router;
