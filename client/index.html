@@ -176,6 +176,7 @@
 <!-- BUDGETS -->
 <section id="budgets" class="tab hidden">
   <div class="grid">
+
     <div class="card">
       <h3>Edit Monthly Budget</h3>
       <div class="row">
@@ -189,7 +190,6 @@
         </div>
       </div>
 
-      <!-- ⭐ NEW UI STARTS HERE -->
       <div class="budget-form">
         <label>New Budget Line</label>
         <div class="row">
@@ -204,35 +204,35 @@
       </div>
 
       <div id="bdgMsg" class="muted small" aria-live="polite"></div>
-      <!-- ⭐ NEW UI ENDS HERE -->
     </div>
 
- <div class="card">
-  <h3>Current Month Limits</h3>
+    <div class="card">
+      <h3>Current Month Limits</h3>
 
-  <!-- ⭐ SORT DROPDOWN GOES HERE -->
-  <div class="row" style="justify-content: flex-end; margin-bottom: 8px;">
-    <label for="bdgSort" style="margin-right: 8px;">Sort:</label>
-    <select id="bdgSort">
-      <option value="recent">Recently Added</option>
-      <option value="alpha">Alphabetical (A–Z)</option>
-      <option value="largest">Largest → Smallest</option>
-      <option value="smallest">Smallest → Largest</option>
-    </select>
-  </div>
-  <!-- ⭐ END SORT DROPDOWN -->
+      <div class="row" style="justify-content: flex-end; margin-bottom: 8px;">
+        <label for="bdgSort" style="margin-right: 8px;">Sort:</label>
+        <select id="bdgSort">
+          <option value="recent">Recently Added</option>
+          <option value="alpha">Alphabetical (A–Z)</option>
+          <option value="largest">Largest → Smallest</option>
+          <option value="smallest">Smallest → Largest</option>
+        </select>
+      </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Category</th>
-        <th class="right">Limit</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="bdgRows"></tbody>
-  </table>
-</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th class="right">Limit</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="bdgRows"></tbody>
+      </table>
+    </div>
+
+  </div> <!-- ⭐ FIXED: closes .grid -->
+</section> <!-- ⭐ FIXED: closes #budgets -->
 
 
  <!-- SUMMARY (Dashboard + Detailed Breakdown) -->
