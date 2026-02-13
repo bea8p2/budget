@@ -172,39 +172,51 @@
     </div>
   </section>
 
-  <!-- BUDGETS -->
-  <section id="budgets" class="tab hidden">
-    <div class="grid">
-      <div class="card">
-        <h3>Edit Monthly Budget</h3>
-        <div class="row">
-          <div style="flex:1">
-            <label for="bdgYear">Year</label>
-            <input id="bdgYear" type="number" />
-          </div>
-          <div style="flex:1">
-            <label for="bdgMonth">Month (1-12)</label>
-            <input id="bdgMonth" type="number" min="1" max="12" />
-          </div>
+
+<!-- BUDGETS -->
+<section id="budgets" class="tab hidden">
+  <div class="grid">
+    <div class="card">
+      <h3>Edit Monthly Budget</h3>
+      <div class="row">
+        <div style="flex:1">
+          <label for="bdgYear">Year</label>
+          <input id="bdgYear" type="number" />
         </div>
-        <div class="muted small">Enter one category per line as <code>Category,Limit</code> (e.g., <code>Groceries,400</code>)</div>
-        <textarea id="bdgLines" rows="8" placeholder="Groceries,400&#10;Dining,250&#10;Rent,1200"></textarea>
-        <div class="actions">
-          <button id="loadBudget">Load</button>
-          <button id="saveBudget">Save</button>
+        <div style="flex:1">
+          <label for="bdgMonth">Month (1-12)</label>
+          <input id="bdgMonth" type="number" min="1" max="12" />
         </div>
-        <div id="bdgMsg" class="muted small" aria-live="polite"></div>
       </div>
 
-      <div class="card">
-        <h3>Current Month Limits</h3>
-        <table>
-          <thead><tr><th>Category</th><th class="right">Limit</th></tr></thead>
-          <tbody id="bdgRows"></tbody>
-        </table>
+      <!-- ⭐ NEW UI STARTS HERE -->
+      <div class="budget-form">
+        <label>New Budget Line</label>
+        <div class="row">
+          <input id="bdgCategory" placeholder="Category" style="flex:1" />
+          <input id="bdgLimit" type="number" placeholder="Limit" style="width:120px" />
+          <button id="addBudgetLine">Add</button>
+        </div>
       </div>
+
+      <div class="actions">
+        <button id="loadBudget">Load</button>
+      </div>
+
+      <div id="bdgMsg" class="muted small" aria-live="polite"></div>
+      <!-- ⭐ NEW UI ENDS HERE -->
     </div>
-  </section>
+
+    <div class="card">
+      <h3>Current Month Limits</h3>
+      <table>
+        <thead><tr><th>Category</th><th class="right">Limit</th></tr></thead>
+        <tbody id="bdgRows"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 
   <!-- SUMMARY (Dashboard + Detailed Breakdown) -->
   <section id="summary" class="tab hidden">
