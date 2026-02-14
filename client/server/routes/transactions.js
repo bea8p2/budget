@@ -106,4 +106,51 @@ router.delete(
   })
 );
 
+/**
+ * PATCH /transactions/:id
+ * body: { accountId, date, amount, category, note }
+ * ensures the transaction belongs to the current user
+ */
+router.patch(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const body = req.body || {};
+
+    const tx = await Transaction.findOne({ _id: id, userId: req.user.id });
+    if (!tx) throw notFoundErr('Transaction not found.');
+
+    // Validate and update fields
+    if (body.accountId !== undefined) {
+      const acc = await Account.findOne({ _id: body.accountId, userId: req.user.id });
+      if (!acc) throw notFoundErr('Account not found for this user.');
+      tx.accountId = body.accountId;
+    }
+
+    if (body.date !== undefined) {
+      if (!isISODateLike(body.date)) throw badRequest('date must be a valid date.');
+      tx.date = new Date(body.date);
+    }
+
+    if (body.amount !== undefined) {
+      const amount = toNumberMaybe(body.amount);
+      if (amount === null) throw badRequest('amount must be a number.');
+      tx.amount = amount;
+    }
+
+    if (body.category !== undefined) {
+      const category = body.category.toString().trim();
+      if (!category) throw badRequest('category cannot be empty.');
+      tx.category = category;
+    }
+
+    if (body.note !== undefined) {
+      tx.note = body.note.toString();
+    }
+
+    await tx.save();
+    res.json(tx);
+  })
+);
+
 export default router;
