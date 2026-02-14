@@ -114,9 +114,11 @@ router.delete(
 router.patch(
   '/:id',
   asyncHandler(async (req, res) => {
+    console.log("PATCH route hit");
+    console.log("PATCH body:", req.body);
+
     const { id } = req.params;
     const body = req.body || {};
-console.log("PATCH route hit");
 
 
     const tx = await Transaction.findOne({ _id: id, userId: req.user.id });
