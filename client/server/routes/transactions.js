@@ -116,6 +116,8 @@ router.patch(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const body = req.body || {};
+console.log("PATCH route hit");
+
 
     const tx = await Transaction.findOne({ _id: id, userId: req.user.id });
     if (!tx) throw notFoundErr('Transaction not found.');
