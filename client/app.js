@@ -19,6 +19,14 @@ function fmtMoney(n, currency = 'USD') {
 function startOfMonth(y, m) { return new Date(Date.UTC(y, m - 1, 1)); }
 function endOfMonth(y, m) { return new Date(Date.UTC(y, m, 0, 23, 59, 59, 999)); }
 
+function formatDateForInput(d) {
+  const dt = new Date(d);
+  const yyyy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function setMsg(id, text, kind = 'info') {
   const el = $(id);
   if (!el) return;
