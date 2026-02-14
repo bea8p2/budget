@@ -361,40 +361,42 @@ async function loadTransactions() {
 
     const rows = $('txRows');
     if (rows) {
-    rows.innerHTML = items.length
-      ? items.map(t => `
-        <tr data-id="${t._id}">
-          <td>${new Date(t.date).toLocaleDateString()}</td>
-          <td>${state.accountMap[t.accountId]?.name || '—'}</td>
-          <td class="right ${t.amount < 0 ? 'danger' : 'success'}">${fmtMoney(t.amount)}</td>
-          <td>${t.category}</td>
-          <td>${t.note || ''}</td>
-          <td class="right">
-            <button class="small" data-edit="${t._id}">Edit</button>
-            <button class="small" data-del="${t._id}">Delete</button>
-          </td>
-        </tr>
-      `).join('')
-      : `<tr><td colspan="6" class="muted">No transactions found.</td></tr>`;
+      rows.innerHTML = items.length
+        ? items.map(t => `
+          <tr data-id="${t._id}">
+            <td>${new Date(t.date).toLocaleDateString()}</td>
+            <td>${state.accountMap[t.accountId]?.name || '—'}</td>
+            <td class="right ${t.amount < 0 ? 'danger' : 'success'}">${fmtMoney(t.amount)}</td>
+            <td>${t.category}</td>
+            <td>${t.note || ''}</td>
+            <td class="right">
+              <button class="small" data-edit="${t._id}">Edit</button>
+              <button class="small" data-del="${t._id}">Delete</button>
+            </td>
+          </tr>
+        `).join('')
+        : `<tr><td colspan="6" class="muted">No transactions found.</td></tr>`;
 
+      // ⭐ 1. Wire up EDIT buttons
+      rows.querySelectorAll('button[data-edit]').forEach(btn => {
+        btn.onclick = () => startEditTransaction(btn.dataset.edit);
+      });
 
- // ⭐ 1. Wire up EDIT buttons 
-rows.querySelectorAll('button[data-edit]').forEach(btn => 
-  { btn.onclick = () => startEditTransaction(btn.dataset.edit); 
-      }); 
-// ⭐ 2. Wire up DELETE buttons (your confirm-before-delete block) 
-rows.querySelectorAll('button[data-del]').forEach(btn => {
-   btn.onclick = async () => {
-     if (!confirm('Delete this transaction?')) return; 
-     try { 
-      await api(`/transactions/${btn.dataset.del}`, { method: 'DELETE' }); 
-      await loadTransactions(); 
-    } catch (err) { 
-      setMsg('txMsg', err.message, 'error'); 
-    } 
-  }; 
-});
-    setMsg('txMsg', '');
+      // ⭐ 2. Wire up DELETE buttons (confirm-before-delete)
+      rows.querySelectorAll('button[data-del]').forEach(btn => {
+        btn.onclick = async () => {
+          if (!confirm('Delete this transaction?')) return;
+          try {
+            await api(`/transactions/${btn.dataset.del}`, { method: 'DELETE' });
+            await loadTransactions();
+          } catch (err) {
+            setMsg('txMsg', err.message, 'error');
+          }
+        };
+      });
+
+      setMsg('txMsg', '');
+    } // ← THIS WAS MISSING
   } catch (err) {
     setMsg('txMsg', err.message, 'error');
   }
