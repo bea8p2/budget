@@ -291,7 +291,7 @@ if (addTxBtn) {
         const accountId = $('txAccount').value;
         const date = $('txDate').value;
         const amount = Number($('txAmount').value);
-        const category = $('txCategory').value.trim();
+        const category = $('txnCategory').value.trim();
         const note = $('txNote').value.trim();
 
         if (!accountId || !date || !category || Number.isNaN(amount)) {
@@ -307,9 +307,9 @@ if (addTxBtn) {
         setMsg('txMsg', 'Added.', 'success');
         $('txDate').value = '';
         $('txAmount').value = '';
-        $('txCategory').value = '';
+        $('txnCategory').value = '';
         $('txNote').value = '';
-        $('txCategory').focus();
+        $('txnCategory').focus();
 
         await loadTransactions();
       } catch (err) {
