@@ -402,6 +402,74 @@ async function loadTransactions() {
   }
 }
 
+function startEditTransaction(id) {
+  const row = document.querySelector(`#txRows tr[data-id="${id}"]`);
+  if (!row) return;
+
+  const cells = row.children;
+
+  const original = {
+    date: cells[0].textContent,
+    account: cells[1].textContent,
+    amount: cells[2].textContent.replace(/[$,]/g, ''),
+    category: cells[3].textContent,
+    note: cells[4].textContent
+  };
+
+  row.innerHTML = `
+    <td><input type="date" id="editDate" value="${formatDateForInput(original.date)}"></td>
+
+    <td>
+      <select id="editAccount">
+        ${state.accounts.map(a => `
+          <option value="${a._id}" ${a.name === original.account ? 'selected' : ''}>
+            ${a.name} (${a.type})
+          </option>
+        `).join('')}
+      </select>
+    </td>
+
+    <td><input type="number" step="0.01" id="editAmount" value="${original.amount}"></td>
+    <td><input id="editCategory" value="${original.category}"></td>
+    <td><input id="editNote" value="${original.note}"></td>
+
+    <td class="right">
+      <button class="small" id="saveTx">Save</button>
+      <button class="small" id="cancelTx">Cancel</button>
+    </td>
+  `;
+
+  // SAVE
+  $('saveTx').onclick = async () => {
+    try {
+      const body = {
+        date: $('editDate').value,
+        accountId: $('editAccount').value,
+        amount: Number($('editAmount').value),
+        category: $('editCategory').value.trim(),
+        note: $('editNote').value.trim()
+      };
+
+      if (!body.date || !body.category || Number.isNaN(body.amount)) {
+        throw new Error('Date, amount, and category are required.');
+      }
+
+      await api(`/transactions/${id}`, {
+        method: 'PATCH',
+        body
+      });
+
+      await loadTransactions();
+    } catch (err) {
+      setMsg('txMsg', err.message, 'error');
+    }
+  };
+
+  // CANCEL
+  $('cancelTx').onclick = () => loadTransactions();
+}
+
+
 // --- Budgets ---
 function setDefaultPeriodFields() {
   const now = new Date();
