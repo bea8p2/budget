@@ -461,6 +461,9 @@ function startEditTransaction(id) {
       if (!body.date || !body.category || Number.isNaN(body.amount)) {
         throw new Error('Date, amount, and category are required.');
       }
+      
+      console.log("PATCH body:", body);
+
 
       await api(`/transactions/${id}`, {
         method: 'PATCH',
