@@ -179,6 +179,7 @@
 
     <div class="card">
       <h3>Edit Monthly Budget</h3>
+
       <div class="row">
         <div style="flex:1">
           <label for="bdgYear">Year</label>
@@ -192,15 +193,32 @@
 
       <div class="budget-form">
         <label>New Budget Line</label>
+
         <div class="row">
           <input id="bdgCategory" placeholder="Category" style="flex:1" />
           <input id="bdgLimit" type="number" placeholder="Limit" style="width:120px" />
+        </div>
+
+        <!-- ⭐ NEW: Recurring checkbox -->
+        <div class="row" style="margin-top:6px; align-items:center;">
+          <label style="display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="bdgRecurring" />
+            Recurring monthly
+          </label>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
           <button id="addBudgetLine">Add</button>
         </div>
       </div>
 
       <div class="actions">
         <button id="loadBudget">Load</button>
+
+        <!-- ⭐ NEW: Add Planned Expense button -->
+        <button id="openPlannedExpenseModal" style="margin-left:8px;">
+          Add Planned Expense
+        </button>
       </div>
 
       <div id="bdgMsg" class="muted small" aria-live="polite"></div>
@@ -231,8 +249,41 @@
       </table>
     </div>
 
-  </div> <!-- ⭐ FIXED: closes .grid -->
-</section> <!-- ⭐ FIXED: closes #budgets -->
+  </div> <!-- closes .grid -->
+</section> <!-- closes #budgets -->
+
+
+<!-- ⭐ NEW: PLANNED EXPENSE MODAL -->
+<div id="plannedExpenseModal" class="modal hidden">
+  <div class="modal-content" style="max-width:400px;">
+    <h3>Add Planned Expense</h3>
+
+    <label>
+      Name
+      <input type="text" id="plannedName" />
+    </label>
+
+    <label>
+      Total Amount
+      <input type="number" id="plannedTotal" />
+    </label>
+
+    <label>
+      Due Date
+      <input type="date" id="plannedDueDate" />
+    </label>
+
+    <label>
+      Category (optional)
+      <input type="text" id="plannedCategory" />
+    </label>
+
+    <div class="row" style="margin-top:12px; justify-content:flex-end; gap:8px;">
+      <button id="savePlannedExpense">Save</button>
+      <button id="closePlannedExpenseModal">Cancel</button>
+    </div>
+  </div>
+</div>
 
 
  <!-- SUMMARY (Dashboard + Detailed Breakdown) -->
