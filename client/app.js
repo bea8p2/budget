@@ -625,15 +625,16 @@ function sortLimits(limits) {
   }
 }
 
-
 function renderBudgetRows(limits) {
+  const rows = $('bdgRows');   // ⭐ REQUIRED
+
   if (!limits || !limits.length) {
-    $('bdgRows').innerHTML =
+    rows.innerHTML =
       `<tr><td colspan="3" class="muted">No categories yet.</td></tr>`;
     return;
   }
 
-  $('bdgRows').innerHTML = limits.map(l => {
+  rows.innerHTML = limits.map(l => {
     const badge = l.type === 'recurring'
       ? `<span class="badge recurring">R</span>`
       : l.type === 'planned'
@@ -648,6 +649,7 @@ function renderBudgetRows(limits) {
       </tr>
     `;
   }).join('');
+}
 
   // ⭐ Apply sorting
   const sorted = sortLimits(limits);
