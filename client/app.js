@@ -685,49 +685,6 @@ function renderBudgetRows(limits) {
 }
 
 
-  // ⭐ Apply sorting
-  const sorted = sortLimits(limits);
-
-  rows.innerHTML = sorted
-    .map((l, i) => `
-      <tr data-index="${i}">
-        <td>${l.category}</td>
-        <td class="right">${fmtMoney(l.limit)}</td>
-        <td class="right">
-          <button class="small" data-edit="${i}">Edit</button>
-          <button class="small danger" data-del="${i}">Delete</button>
-        </td>
-      </tr>
-    `)
-    .join('');
-
-  // DELETE HANDLERS
-  rows.querySelectorAll('button[data-del]').forEach(btn => {
-    btn.onclick = async () => {
-      const index = Number(btn.dataset.del);
-      const y = Number($('bdgYear').value);
-      const m = Number($('bdgMonth').value);
-
-      const doc = await api(`/budgets/${y}/${m}`);
-      const newLimits = doc.limits.filter((_, i) => i !== index);
-
-      const updated = await api(`/budgets/${y}/${m}`, {
-        method: 'PUT',
-        body: { limits: newLimits }
-      });
-
-      renderBudgetRows(updated.limits);
-    };
-  });
-
-  // EDIT HANDLERS
-  rows.querySelectorAll('button[data-edit]').forEach(btn => {
-    btn.onclick = () => enterEditMode(Number(btn.dataset.edit));
-  });
-
-
-
-
 // --- Inline Editing ---
 async function enterEditMode(index) {
   const y = Number($('bdgYear').value);
