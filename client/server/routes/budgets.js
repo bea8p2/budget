@@ -65,11 +65,13 @@ router.get(
       throw badRequest('Year and month must be integers.');
     }
 
-    const saved = await Budget.findOne({
-      userId: req.user.id,
-      'period.year': year,
-      'period.month': month
-    });
+const saved = await Budget.findOne({
+  userId: req.user.id,
+  $or: [
+    { 'period.year': year, 'period.month': month },
+    { 'period.year': String(year), 'period.month': String(month) }
+  ]
+});
 
     const savedLines = saved ? saved.limits : [];
 
