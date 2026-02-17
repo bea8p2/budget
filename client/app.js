@@ -626,15 +626,29 @@ function sortLimits(limits) {
 }
 
 
-// --- Render Budget Rows (with delete + edit buttons + sorting) ---
 function renderBudgetRows(limits) {
-  const rows = $('bdgRows');
-
   if (!limits || !limits.length) {
-    rows.innerHTML =
+    $('bdgRows').innerHTML =
       `<tr><td colspan="3" class="muted">No categories yet.</td></tr>`;
     return;
   }
+
+  $('bdgRows').innerHTML = limits.map(l => {
+    const badge = l.type === 'recurring'
+      ? `<span class="badge recurring">R</span>`
+      : l.type === 'planned'
+      ? `<span class="badge planned">P</span>`
+      : '';
+
+    return `
+      <tr>
+        <td>${badge} ${l.category}</td>
+        <td class="right">${fmtMoney(l.limit)}</td>
+        <td></td>
+      </tr>
+    `;
+  }).join('');
+}
 
   // ⭐ Apply sorting
   const sorted = sortLimits(limits);
