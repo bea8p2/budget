@@ -690,7 +690,7 @@ function renderBudgetRows(limits) {
   rows.querySelectorAll('button[data-edit]').forEach(btn => {
     btn.onclick = () => enterEditMode(Number(btn.dataset.edit));
   });
-}
+
 
 
 
