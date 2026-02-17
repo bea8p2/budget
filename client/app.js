@@ -625,8 +625,9 @@ function sortLimits(limits) {
   }
 }
 
+
 function renderBudgetRows(limits) {
-  const rows = $('bdgRows');   // ⭐ REQUIRED
+  const rows = $('bdgRows');
 
   if (!limits || !limits.length) {
     rows.innerHTML =
@@ -634,22 +635,55 @@ function renderBudgetRows(limits) {
     return;
   }
 
-  rows.innerHTML = limits.map(l => {
-    const badge = l.type === 'recurring'
-      ? `<span class="badge recurring">R</span>`
-      : l.type === 'planned'
-      ? `<span class="badge planned">P</span>`
-      : '';
+  // ⭐ Apply sorting
+  const sorted = sortLimits(limits);
 
-    return `
-      <tr>
-        <td>${badge} ${l.category}</td>
-        <td class="right">${fmtMoney(l.limit)}</td>
-        <td></td>
-      </tr>
-    `;
-  }).join('');
+  rows.innerHTML = sorted
+    .map((l, i) => {
+      const badge = l.type === 'recurring'
+        ? `<span class="badge recurring">R</span>`
+        : l.type === 'planned'
+        ? `<span class="badge planned">P</span>`
+        : '';
+
+      return `
+        <tr data-index="${i}">
+          <td>${badge} ${l.category}</td>
+          <td class="right">${fmtMoney(l.limit)}</td>
+          <td class="right">
+            <button class="small" data-edit="${i}">Edit</button>
+            <button class="small danger" data-del="${i}">Delete</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  // DELETE HANDLERS
+  rows.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.onclick = async () => {
+      const index = Number(btn.dataset.del);
+      const y = Number($('bdgYear').value);
+      const m = Number($('bdgMonth').value);
+
+      const doc = await api(`/budgets/${y}/${m}`);
+      const newLimits = doc.limits.filter((_, i) => i !== index);
+
+      const updated = await api(`/budgets/${y}/${m}`, {
+        method: 'PUT',
+        body: { limits: newLimits }
+      });
+
+      renderBudgetRows(updated.limits);
+    };
+  });
+
+  // EDIT HANDLERS
+  rows.querySelectorAll('button[data-edit]').forEach(btn => {
+    btn.onclick = () => enterEditMode(Number(btn.dataset.edit));
+  });
 }
+
 
   // ⭐ Apply sorting
   const sorted = sortLimits(limits);
