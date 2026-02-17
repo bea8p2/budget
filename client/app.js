@@ -648,7 +648,6 @@ function renderBudgetRows(limits) {
       </tr>
     `;
   }).join('');
-}
 
   // ⭐ Apply sorting
   const sorted = sortLimits(limits);
