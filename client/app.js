@@ -625,6 +625,23 @@ function sortLimits(limits) {
   }
 }
 
+// --- Sorting Helper ---
+function sortLimits(limits) {
+  const mode = $('bdgSort')?.value || 'recent';
+  const arr = [...limits];
+
+  switch (mode) {
+    case 'alpha':
+      return arr.sort((a, b) => a.category.localeCompare(b.category));
+    case 'largest':
+      return arr.sort((a, b) => b.limit - a.limit);
+    case 'smallest':
+      return arr.sort((a, b) => a.limit - b.limit);
+    case 'recent':
+    default:
+      return arr;
+  }
+}
 
 function renderBudgetRows(limits) {
   const rows = $('bdgRows');
@@ -635,7 +652,6 @@ function renderBudgetRows(limits) {
     return;
   }
 
-  // ⭐ Apply sorting
   const sorted = sortLimits(limits);
 
   rows.innerHTML = sorted
@@ -659,7 +675,6 @@ function renderBudgetRows(limits) {
     })
     .join('');
 
-  // DELETE HANDLERS
   rows.querySelectorAll('button[data-del]').forEach(btn => {
     btn.onclick = async () => {
       const index = Number(btn.dataset.del);
@@ -678,7 +693,6 @@ function renderBudgetRows(limits) {
     };
   });
 
-  // EDIT HANDLERS
   rows.querySelectorAll('button[data-edit]').forEach(btn => {
     btn.onclick = () => enterEditMode(Number(btn.dataset.edit));
   });
