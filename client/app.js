@@ -602,28 +602,6 @@ async function addBudgetLine() {
   }
 }
 
-// --- Sorting Helper ---
-function sortLimits(limits) {
-  const mode = $('bdgSort')?.value || 'recent';
-  const arr = [...limits]; // never mutate original
-
-  switch (mode) {
-    case 'alpha':
-      return arr.sort((a, b) =>
-        a.category.localeCompare(b.category)
-      );
-
-    case 'largest':
-      return arr.sort((a, b) => b.limit - a.limit);
-
-    case 'smallest':
-      return arr.sort((a, b) => a.limit - b.limit);
-
-    case 'recent':
-    default:
-      return arr; // original order
-  }
-}
 
 // --- Sorting Helper ---
 function sortLimits(limits) {
