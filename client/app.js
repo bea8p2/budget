@@ -567,13 +567,32 @@ async function addBudgetLine() {
 
     const category = $('bdgCategory').value.trim();
     const limit = Number($('bdgLimit').value);
+    const isRecurring = $('bdgRecurring').checked;
 
     if (!category || Number.isNaN(limit)) {
       setMsg('bdgMsg', 'Category and limit are required.', 'error');
       return;
     }
 
-    // Load existing budget or create empty
+    // ⭐ If recurring, save to recurring collection instead
+    if (isRecurring) {
+      await api('/budgets/recurring', {
+        method: 'POST',
+        body: { category, amount: limit }
+      });
+
+      $('bdgCategory').value = '';
+      $('bdgLimit').value = '';
+      $('bdgRecurring').checked = false;
+
+      setMsg('bdgMsg', 'Recurring line added.', 'success');
+      setTimeout(() => setMsg('bdgMsg', ''), 1500);
+
+      loadBudgetUI(); // refresh table
+      return;
+    }
+
+    // ⭐ Otherwise, save a normal monthly budget line
     let doc;
     try {
       doc = await api(`/budgets/${y}/${m}`);
@@ -592,7 +611,7 @@ async function addBudgetLine() {
 
     $('bdgCategory').value = '';
     $('bdgLimit').value = '';
-    $('bdgCategory').focus();
+    $('bdgRecurring').checked = false;
 
     setMsg('bdgMsg', 'Added.', 'success');
     setTimeout(() => setMsg('bdgMsg', ''), 1500);
