@@ -654,13 +654,13 @@ function renderBudgetRows(limits) {
   rows.innerHTML = sorted
     .map((l, i) => {
       const badge = l.type === 'recurring'
-        ? `<span class="badge recurring">R</span>`
+        ? `<span class="badge recurring"></span>`
         : l.type === 'planned'
         ? `<span class="badge planned">P</span>`
         : '';
 
       return `
-        <tr data-index="${i}">
+        <tr data-index="${i}" data-type="${l.type || 'normal'}" data-category="${l.category}">
           <td>${badge} ${l.category}</td>
           <td class="right">${fmtMoney(l.limit)}</td>
           <td class="right">
@@ -672,12 +672,38 @@ function renderBudgetRows(limits) {
     })
     .join('');
 
+  // DELETE HANDLERS
   rows.querySelectorAll('button[data-del]').forEach(btn => {
     btn.onclick = async () => {
       const index = Number(btn.dataset.del);
+      const row = btn.closest('tr');
+      const type = row.dataset.type;
+      const category = row.dataset.category;
+
       const y = Number($('bdgYear').value);
       const m = Number($('bdgMonth').value);
 
+      // 1. Delete recurring
+      if (type === 'recurring') {
+        await api('/budgets/recurring/delete', {
+          method: 'POST',
+          body: { category }
+        });
+        loadBudgetUI();
+        return;
+      }
+
+      // 2. Delete planned
+      if (type === 'planned') {
+        await api('/budgets/planned/delete', {
+          method: 'POST',
+          body: { category }
+        });
+        loadBudgetUI();
+        return;
+      }
+
+      // 3. Delete normal monthly budget line
       const doc = await api(`/budgets/${y}/${m}`);
       const newLimits = doc.limits.filter((_, i) => i !== index);
 
@@ -690,6 +716,7 @@ function renderBudgetRows(limits) {
     };
   });
 
+  // EDIT HANDLERS
   rows.querySelectorAll('button[data-edit]').forEach(btn => {
     btn.onclick = () => enterEditMode(Number(btn.dataset.edit));
   });

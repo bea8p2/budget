@@ -201,4 +201,17 @@ router.post('/planned/skip', asyncHandler(async (req, res) => {
   res.status(201).json(skip);
 }));
 
+router.post('/recurring/delete', asyncHandler(async (req, res) => {
+  const { category } = req.body;
+
+  await RecurringBudgetLine.deleteOne({
+    userId: req.user.id,
+    category
+  });
+
+  res.json({ ok: true });
+}));
+
+
+
 export default router;
