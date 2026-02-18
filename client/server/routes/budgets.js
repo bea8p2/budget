@@ -149,7 +149,8 @@ router.post('/recurring', asyncHandler(async (req, res) => {
   const line = await RecurringBudgetLine.create({
     userId: req.user.id,
     category,
-    amount
+    amount,
+    active: true
   });
 
   res.status(201).json(line);
