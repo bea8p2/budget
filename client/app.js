@@ -534,6 +534,12 @@ if (bdgMonth) {
   bdgMonth.onchange = () => loadBudgetUI();
 }
 
+const bdgIncome = $('bdgIncome');
+if (bdgIncome) {
+  bdgIncome.oninput = updateRemainingBudget;
+}
+
+
 
 // --- Load Budget UI ---
 async function loadBudgetUI() {
@@ -720,7 +726,28 @@ function renderBudgetRows(limits) {
   rows.querySelectorAll('button[data-edit]').forEach(btn => {
     btn.onclick = () => enterEditMode(Number(btn.dataset.edit));
   });
+
+
+updateRemainingBudget();}
+
+
+// --- Remaining Budget Calculator ---
+function updateRemainingBudget() {
+  const income = Number($('bdgIncome').value) || 0;
+
+  let totalBudget = 0;
+  document.querySelectorAll('#bdgRows tr').forEach(row => {
+    const amountCell = row.querySelector('td:nth-child(2)');
+    if (amountCell) {
+      const raw = amountCell.textContent.replace(/[^0-9.-]/g, '');
+      totalBudget += Number(raw) || 0;
+    }
+  });
+
+  const remaining = income - totalBudget;
+  $('bdgRemaining').textContent = fmtMoney(remaining);
 }
+
 
 
 // --- Inline Editing ---

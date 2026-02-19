@@ -52,7 +52,7 @@
 <body>
   <header>
     <h1>Budget App (MVP)</h1>
-    <div class="muted">Add an account ➜ add transactions ➜ (optional) set a monthly budget ➜ view the combined Summary.</div>
+    <div class="muted">Add an account ➜ add transactions ➜ set a monthly budget ➜ view the combined Summary.</div>
   </header>
 
   <nav id="tabs">
@@ -248,10 +248,23 @@
         <tbody id="bdgRows"></tbody>
       </table>
     </div>
+    <div class="card">
+      <h3>Monthly Overview</h3>
+  
+      <div class="row">
+        <div style="flex:1">
+          <label for="bdgIncome">Expected Income</label>
+          <input id="bdgIncome" type="number" placeholder="0" />
+        </div>
+  
+        <div style="flex:1">
+          <label>Remaining Budget</label>
+          <div id="bdgRemaining" class="muted big">—</div>
+        </div>
+      </div>
+    </div>
 
   </div> <!-- closes .grid -->
-</section> <!-- closes #budgets -->
-
 
 <!-- ⭐ NEW: PLANNED EXPENSE MODAL -->
 <div id="plannedExpenseModal" class="modal hidden">
@@ -284,6 +297,7 @@
     </div>
   </div>
 </div>
+</section> <!-- closes #budgets -->
 
 
  <!-- SUMMARY (Dashboard + Detailed Breakdown) -->
