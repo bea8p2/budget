@@ -258,7 +258,17 @@ if (addAccountBtn) {
 
 // --- Transactions ---
 async function loadAccountsForTx() {
-  if (!state.accounts.length) await loadAccounts();
+  // Ensure accounts is loaded
+  if (!Array.isArray(state.accounts)) {
+    await loadAccounts();
+  }
+
+  // If STILL not an array, bail out safely
+  if (!Array.isArray(state.accounts)) {
+    console.warn("state.accounts is not an array:", state.accounts);
+    return;
+  }
+
   const sel = $('txAccount');
   if (sel) {
     sel.innerHTML = state.accounts
@@ -266,6 +276,7 @@ async function loadAccountsForTx() {
       .join('');
   }
 }
+
 
 function setDefaultTransactionDate() {
   const now = new Date();
