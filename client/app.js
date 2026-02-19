@@ -276,18 +276,6 @@ if (addAccountBtn) {
     });
 }
 
-// --- Transactions ---
-async function loadAccounts() {
-  const items = await api('/accounts');
-
-  if (Array.isArray(items)) {
-    state.accounts = items;
-  } else {
-    console.warn("Unexpected /accounts response:", items);
-    state.accounts = []; // prevent crashes
-  }
-}
-
 
 
 function setDefaultTransactionDate() {
