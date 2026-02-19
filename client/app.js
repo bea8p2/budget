@@ -71,7 +71,15 @@ async function api(path, { method = 'GET', body } = {}) {
 
   // ⭐ Friendly error handling
   if (!res.ok) {
+    const msg =
+      (data && data.error)
+        ? data.error
+        : (typeof data === 'string' && data ? data : `${res.status} ${res.statusText}`);
+    throw new Error(msg);
+  }
 
+  return data;   // ⭐ You were also missing this return
+}
 
 // --- NEW: Load budget categories ---
 async function loadBudgetCategories(year, month) {
