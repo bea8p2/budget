@@ -43,15 +43,35 @@ async function withPending(btn, fn) {
   finally { btn.disabled = false; btn.innerText = original; }
 }
 
-// --- API helper ---
-async function api(path, options = {}) {
-  return fetch(`http://localhost:4000${path}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-    body: options.body ? JSON.stringify(options.body) : undefined
-  }).then(r => r.json());
-}
+// --- API helper (JWT via HttpOnly cookie, friendly errors) ---
+async function api(path, { method = 'GET', body } = {}) {
+  const url = `http://localhost:4000${path}`;
+
+  const headers = {};
+  if (body) headers['Content-Type'] = 'application/json';
+
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include'   // ⭐ send cookies with every request
+  });
+
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; }
+  catch { data = text; }
+
+  // ⭐ Global auth failure handler
+  if (data?.error === 'Invalid or expired token') {
+    console.warn('Token expired — redirecting to login');
+    window.location.href = '/login.html';
+    return;
+  }
+
+  // ⭐ Friendly error handling
+  if (!res.ok) {
+
 
 // --- NEW: Load budget categories ---
 async function loadBudgetCategories(year, month) {
@@ -257,25 +277,17 @@ if (addAccountBtn) {
 }
 
 // --- Transactions ---
-async function loadAccountsForTx() {
-  // Ensure accounts is loaded
-  if (!Array.isArray(state.accounts)) {
-    await loadAccounts();
-  }
+async function loadAccounts() {
+  const items = await api('/accounts');
 
-  // If STILL not an array, bail out safely
-  if (!Array.isArray(state.accounts)) {
-    console.warn("state.accounts is not an array:", state.accounts);
-    return;
-  }
-
-  const sel = $('txAccount');
-  if (sel) {
-    sel.innerHTML = state.accounts
-      .map(a => `<option value="${a._id}">${a.name} (${a.type})</option>`)
-      .join('');
+  if (Array.isArray(items)) {
+    state.accounts = items;
+  } else {
+    console.warn("Unexpected /accounts response:", items);
+    state.accounts = []; // prevent crashes
   }
 }
+
 
 
 function setDefaultTransactionDate() {
