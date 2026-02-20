@@ -778,8 +778,10 @@ async function enterEditMode(index) {
 
   if (isRecurring || isPlanned) {
   setMsg('bdgMsg', 'Recurring and planned items cannot be edited here.', 'error');
+  renderBudgetRows(limits); // restore the row immediately
   return;
 }
+
 
 
   row.innerHTML = `
