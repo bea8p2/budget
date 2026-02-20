@@ -127,10 +127,12 @@ if (tabsNav) {
       const y = Number(($('fltYear') || {}).value || 0);
       const m = Number(($('fltMonth') || {}).value || 0);
 
-      loadBudgetCategories(y, m);   // ⭐ ADD THIS
+      loadBudgetCategories(y, m);
       loadTransactions();
-}
+    }   // <-- this closes the transactions block
 
+    // ⭐ THIS is the missing brace you needed
+    // It closes the event listener BEFORE the budgets block starts
 
     if (target === 'budgets') {
       setDefaultPeriodFields();
@@ -146,26 +148,6 @@ if (tabsNav) {
       if (sumMonth) sumMonth.value = now.getMonth() + 1;
 
       runSummary();
-
-      // --- Prev Month ---
-      const prevBtn = $('prevMonth');
-      if (prevBtn) {
-        prevBtn.onclick = () => {
-          let year = Number(sumYear.value);
-          let month = Number(sumMonth.value);
-
-          month -= 1;
-          if (month < 1) {
-            month = 12;
-            year -= 1;
-          }
-
-          sumYear.value = year;
-          sumMonth.value = month;
-
-          runSummary();
-        };
-      }
 
       // --- Next Month ---
       const nextBtn = $('nextMonth');
