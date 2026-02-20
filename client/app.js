@@ -290,6 +290,17 @@ function setDefaultTxFilters() {
   setDefaultTransactionDate();
 }
 
+async function loadAccountsForTx() {
+  if (!state.accounts.length) await loadAccounts();
+  const sel = $('txAccount');
+  if (!sel) return;
+  sel.innerHTML = state.accounts
+    .map(a => `<option value="${a._id}">${a.name} (${a.type})</option>`)
+    .join('');
+}
+
+
+
 // --- Add Transaction ---
 const addTxBtn = $('addTx');
 if (addTxBtn) {
