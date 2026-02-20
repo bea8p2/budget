@@ -762,6 +762,14 @@ async function enterEditMode(index) {
 
   const row = $('bdgRows').querySelector(`tr[data-index="${index}"]`);
   const item = limits[index];
+  const isRecurring = item.type === 'recurring';
+  const isPlanned = item.type === 'planned';
+
+  if (isRecurring || isPlanned) {
+  setMsg('bdgMsg', 'Recurring and planned items cannot be edited here.', 'error');
+  return;
+}
+
 
   row.innerHTML = `
     <td><input id="editCat" value="${item.category}" /></td>
@@ -791,36 +799,34 @@ async function saveEdit(index) {
   const limit = Number($('editLimit').value);
 
   // VALIDATION
-  if (!category) {
-    setMsg('bdgMsg', 'Category cannot be empty.', 'error');
-    return;
-  }
-  if (Number.isNaN(limit)) {
-    setMsg('bdgMsg', 'Limit must be a number.', 'error');
-    return;
-  }
-  if (limit < 0) {
-    setMsg('bdgMsg', 'Limit must be zero or greater.', 'error');
+  if (!category) return setMsg('bdgMsg', 'Category cannot be empty.', 'error');
+  if (Number.isNaN(limit)) return setMsg('bdgMsg', 'Limit must be a number.', 'error');
+  if (limit < 0) return setMsg('bdgMsg', 'Limit must be zero or greater.', 'error');
+
+  // Only monthly items
+  const monthlyOnly = limits.filter(l => !l.type);
+
+  // Find the correct monthly index based on the merged index
+  const target = limits[index];
+  const monthlyIndex = monthlyOnly.findIndex(l => l.category === target.category);
+
+  if (monthlyIndex === -1) {
+    setMsg('bdgMsg', 'Cannot edit recurring or planned items here.', 'error');
     return;
   }
 
   // Prevent duplicates EXCEPT the row being edited
-  const duplicate = limits.some((l, i) =>
-    i !== index && l.category.toLowerCase() === category.toLowerCase()
+  const duplicate = monthlyOnly.some((l, i) =>
+    i !== monthlyIndex && l.category.toLowerCase() === category.toLowerCase()
   );
   if (duplicate) {
-    setMsg('bdgMsg', 'That category already exists.', 'error');
-    return;
+    return setMsg('bdgMsg', 'That category already exists.', 'error');
   }
 
-  // APPLY EDIT
-// Only save MONTHLY items
-const monthlyOnly = limits.filter(l => !l.type);
-
-// Apply edit to the monthly list only
-const newLimits = monthlyOnly.map((l, i) =>
-  i === index ? { category, limit } : l
-);
+  // Apply edit to the correct monthly row
+  const newLimits = monthlyOnly.map((l, i) =>
+    i === monthlyIndex ? { category, limit } : l
+  );
 
   const updated = await api(`/budgets/${y}/${m}`, {
     method: 'PUT',
