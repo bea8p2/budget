@@ -136,9 +136,12 @@ if (tabsNav) {
     // It closes the event listener BEFORE the budgets block starts
 
     if (target === 'budgets') {
-      setDefaultPeriodFields();
-      loadBudgetUI();
-    }
+  // Wait for DOM to actually render the tab
+  requestAnimationFrame(() => {
+    setDefaultPeriodFields();
+    loadBudgetUI();
+  });
+}
 
     if (target === 'summary') {
       const now = new Date();
