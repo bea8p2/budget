@@ -814,9 +814,13 @@ async function saveEdit(index) {
   }
 
   // APPLY EDIT
-  const newLimits = limits.map((l, i) =>
-    i === index ? { category, limit } : l
-  );
+// Only save MONTHLY items
+const monthlyOnly = limits.filter(l => !l.type);
+
+// Apply edit to the monthly list only
+const newLimits = monthlyOnly.map((l, i) =>
+  i === index ? { category, limit } : l
+);
 
   const updated = await api(`/budgets/${y}/${m}`, {
     method: 'PUT',
