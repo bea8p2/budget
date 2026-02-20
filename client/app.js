@@ -869,6 +869,7 @@ if (target === 'budgets') {
   });
 }
 
+});
 
 // --- Summary (Dashboard + Detailed Breakdown in one tab) ---
 
