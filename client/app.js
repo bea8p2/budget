@@ -54,32 +54,32 @@ window.api = async function api(path, { method = 'GET', body } = {}) {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
-    credentials: 'include'   // ⭐ send cookies with every request
+    credentials: 'include'
   });
 
-  const text = await res.text();
   let data;
-  try { data = text ? JSON.parse(text) : null; }
-  catch { data = text; }
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
 
-  // ⭐ Global auth failure handler
   if (data?.error === 'Invalid or expired token') {
     console.warn('Token expired — redirecting to login');
     window.location.href = '/login.html';
     return;
   }
 
-  // ⭐ Friendly error handling
   if (!res.ok) {
     const msg =
       (data && data.error)
         ? data.error
-        : (typeof data === 'string' && data ? data : `${res.status} ${res.statusText}`);
+        : `${res.status} ${res.statusText}`;
     throw new Error(msg);
   }
 
-  return data;   // ⭐ You were also missing this return
-}
+  return data;
+};
 
 // --- NEW: Load budget categories ---
 async function loadBudgetCategories(year, month) {
