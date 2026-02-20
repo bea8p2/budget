@@ -499,11 +499,6 @@ function startEditTransaction(id) {
   $('cancelTx').onclick = () => loadTransactions();
 }
 
-
-// --- Safe value getter ---
-function val(id) {
-  const el = $(id);
-  return el ? el.value : null;
 }
 
 // ---------------------------------------------
