@@ -112,7 +112,12 @@ const saved = await Budget.findOne({
     res.json({
       year,
       month,
-      limits: [...savedLines, ...recurringLines, ...plannedLines]
+      limits: [
+  ...savedLines.map(l => ({ ...l })), 
+  ...recurringLines.map(l => ({ ...l })), 
+  ...plannedLines.map(l => ({ ...l }))
+]
+
     });
   })
 );
