@@ -14,6 +14,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 /**
+ /**
  * PUT /budgets/:year/:month
  * body: { limits: [{ category, limit }] }
  */
@@ -34,6 +35,7 @@ router.put(
       throw badRequest('limits must be an array of { category, limit }.');
     }
 
+    // --- VALIDATION ---
     for (const row of limits) {
       const category = (row?.category ?? '').toString().trim();
       const limit = Number(row?.limit);
@@ -41,9 +43,16 @@ router.put(
       if (Number.isNaN(limit)) throw badRequest('Each limit row needs a numeric limit.');
     }
 
+    // --- ⭐ SANITIZE LIMITS (THIS IS WHERE YOUR BLOCK GOES) ---
+    let cleanLimits = Array.isArray(limits) ? limits : [];
+
+    // Remove undefined, null, empty, or malformed rows
+    cleanLimits = cleanLimits.filter(l => l && typeof l.category === 'string');
+
+    // --- SAVE CLEANED LIMITS ---
     const doc = await Budget.findOneAndUpdate(
       { userId: req.user.id, 'period.year': year, 'period.month': month },
-      { $set: { limits } },
+      { $set: { limits: cleanLimits } },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 

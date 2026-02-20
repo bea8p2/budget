@@ -562,7 +562,7 @@ async function loadBudgetUI() {
     setMsg('bdgMsg', 'Loading…');
 
     const doc = await api(`/budgets/${y}/${m}`);
-    renderBudgetRows(doc.limits || []);
+    renderBudgetRows((doc.limits || []).filter(Boolean));
 
     setMsg('bdgMsg', '');
   } catch (err) {
@@ -690,49 +690,51 @@ function renderBudgetRows(limits) {
     })
     .join('');
 
-  // DELETE HANDLERS
-  rows.querySelectorAll('button[data-del]').forEach(btn => {
-    btn.onclick = async () => {
-      const index = Number(btn.dataset.del);
-      const row = btn.closest('tr');
-      const type = row.dataset.type;
-      const category = row.dataset.category;
+ // DELETE HANDLERS
+rows.querySelectorAll('button[data-del]').forEach(btn => {
+  btn.onclick = async () => {
+    const index = Number(btn.dataset.del);
+    const row = btn.closest('tr');
+    const type = row.dataset.type;
+    const category = row.dataset.category;
 
-      const y = Number($('bdgYear').value);
-      const m = Number($('bdgMonth').value);
+    const y = Number($('bdgYear').value);
+    const m = Number($('bdgMonth').value);
 
-      // 1. Delete recurring
-      if (type === 'recurring') {
-        await api('/budgets/recurring/delete', {
-          method: 'POST',
-          body: { category }
-        });
-        loadBudgetUI();
-        return;
-      }
-
-      // 2. Delete planned
-      if (type === 'planned') {
-        await api('/budgets/planned/delete', {
-          method: 'POST',
-          body: { category }
-        });
-        loadBudgetUI();
-        return;
-      }
-
-      // 3. Delete normal monthly budget line
-      const doc = await api(`/budgets/${y}/${m}`);
-      const newLimits = doc.limits.filter((_, i) => i !== index);
-
-      const updated = await api(`/budgets/${y}/${m}`, {
-        method: 'PUT',
-        body: { limits: newLimits }
+    // 1. Delete recurring
+    if (type === 'recurring') {
+      await api('/budgets/recurring/delete', {
+        method: 'POST',
+        body: { category }
       });
+      loadBudgetUI();
+      return;
+    }
 
-      renderBudgetRows(updated.limits);
-    };
-  });
+    // 2. Delete planned
+    if (type === 'planned') {
+      await api('/budgets/planned/delete', {
+        method: 'POST',
+        body: { category }
+      });
+      loadBudgetUI();
+      return;
+    }
+
+    // 3. Delete monthly (safe)
+    const doc = await api(`/budgets/${y}/${m}`);
+    const monthlyOnly = (doc.limits || []).filter(l => !l.type);
+
+    const newLimits = monthlyOnly.filter(l => l.category !== category);
+
+    const updated = await api(`/budgets/${y}/${m}`, {
+      method: 'PUT',
+      body: { limits: newLimits }
+    });
+
+    renderBudgetRows(updated.limits);
+  };
+});
 
   // EDIT HANDLERS
   rows.querySelectorAll('button[data-edit]').forEach(btn => {
@@ -804,31 +806,29 @@ async function saveEdit(index) {
   const y = Number($('bdgYear').value);
   const m = Number($('bdgMonth').value);
 
-  // Always fetch the latest version
   const doc = await api(`/budgets/${y}/${m}`);
   const limits = doc.limits || [];
 
   const category = $('editCat').value.trim();
   const limit = Number($('editLimit').value);
 
-  // VALIDATION
   if (!category) return setMsg('bdgMsg', 'Category cannot be empty.', 'error');
   if (Number.isNaN(limit)) return setMsg('bdgMsg', 'Limit must be a number.', 'error');
   if (limit < 0) return setMsg('bdgMsg', 'Limit must be zero or greater.', 'error');
 
-  // Only monthly items
   const monthlyOnly = limits.filter(l => !l.type);
 
-  // Find the correct monthly index based on the merged index
+  // Find the correct monthly index
   const target = limits[index];
   const monthlyIndex = monthlyOnly.findIndex(l => l.category === target.category);
 
   if (monthlyIndex === -1) {
     setMsg('bdgMsg', 'Cannot edit recurring or planned items here.', 'error');
+    loadBudgetUI();
     return;
   }
 
-  // Prevent duplicates EXCEPT the row being edited
+  // Prevent duplicates
   const duplicate = monthlyOnly.some((l, i) =>
     i !== monthlyIndex && l.category.toLowerCase() === category.toLowerCase()
   );
@@ -836,7 +836,6 @@ async function saveEdit(index) {
     return setMsg('bdgMsg', 'That category already exists.', 'error');
   }
 
-  // Apply edit to the correct monthly row
   const newLimits = monthlyOnly.map((l, i) =>
     i === monthlyIndex ? { category, limit } : l
   );
