@@ -43,6 +43,7 @@ async function withPending(btn, fn) {
   finally { btn.disabled = false; btn.innerText = original; }
 }
 
+
 // --- API helper (JWT via HttpOnly cookie, friendly errors) ---
 window.api = async function api(path, { method = 'GET', body } = {}) {
   const url = `http://localhost:4000${path}`;
@@ -493,11 +494,18 @@ function startEditTransaction(id) {
 }
 
 
+// --- Safe value getter ---
+function val(id) {
+  const el = $(id);
+  return el ? el.value : null;
+}
+
 // --- Budgets ---
 function setDefaultPeriodFields() {
   const now = new Date();
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1;
+
   if ($('bdgYear')) $('bdgYear').value = year;
   if ($('bdgMonth')) $('bdgMonth').value = month;
   if ($('sumYear')) $('sumYear').value = year;
@@ -507,30 +515,27 @@ function setDefaultPeriodFields() {
 // --- Load Budget button ---
 const loadBudgetBtn = $('loadBudget');
 if (loadBudgetBtn) {
-  loadBudgetBtn.onclick = () =>
-    withPending(loadBudgetBtn, loadBudgetUI);
+  loadBudgetBtn.onclick = () => withPending(loadBudgetBtn, loadBudgetUI);
 }
 
 // --- Add Budget Line button ---
 const addBudgetBtn = $('addBudgetLine');
 if (addBudgetBtn) {
-  addBudgetBtn.onclick = () =>
-    withPending(addBudgetBtn, addBudgetLine);
+  addBudgetBtn.onclick = () => withPending(addBudgetBtn, addBudgetLine);
 }
 
-//Sort Dropdown
+// --- Sort Dropdown ---
 const sortSelect = $('bdgSort');
 if (sortSelect) {
   sortSelect.onchange = async () => {
-    const y = Number($('bdgYear').value);
-    const m = Number($('bdgMonth').value);
+    const y = Number(val('bdgYear'));
+    const m = Number(val('bdgMonth'));
+    if (!y || !m) return;
 
     try {
       const doc = await api(`/budgets/${y}/${m}`);
-      renderBudgetRows(doc.limits || []);
-    } catch {
-      // ignore if no budget yet
-    }
+      renderBudgetRows((doc.limits || []).filter(Boolean));
+    } catch {}
   };
 }
 
@@ -538,26 +543,18 @@ if (sortSelect) {
 const bdgYear = $('bdgYear');
 const bdgMonth = $('bdgMonth');
 
-if (bdgYear) {
-  bdgYear.onchange = () => loadBudgetUI();
-}
-
-if (bdgMonth) {
-  bdgMonth.onchange = () => loadBudgetUI();
-}
+if (bdgYear) bdgYear.onchange = () => loadBudgetUI();
+if (bdgMonth) bdgMonth.onchange = () => loadBudgetUI();
 
 const bdgIncome = $('bdgIncome');
-if (bdgIncome) {
-  bdgIncome.oninput = updateRemainingBudget;
-}
-
-
+if (bdgIncome) bdgIncome.oninput = updateRemainingBudget;
 
 // --- Load Budget UI ---
 async function loadBudgetUI() {
   try {
-    const y = Number($('bdgYear').value);
-    const m = Number($('bdgMonth').value);
+    const y = Number(val('bdgYear'));
+    const m = Number(val('bdgMonth'));
+    if (!y || !m) return;
 
     setMsg('bdgMsg', 'Loading…');
 
@@ -580,19 +577,20 @@ async function loadBudgetUI() {
 // --- Add a single budget line ---
 async function addBudgetLine() {
   try {
-    const y = Number($('bdgYear').value);
-    const m = Number($('bdgMonth').value);
+    const y = Number(val('bdgYear'));
+    const m = Number(val('bdgMonth'));
+    if (!y || !m) return;
 
-    const category = $('bdgCategory').value.trim();
-    const limit = Number($('bdgLimit').value);
-    const isRecurring = $('bdgRecurring').checked;
+    const category = val('bdgCategory')?.trim() || '';
+    const limit = Number(val('bdgLimit'));
+    const isRecurring = $('bdgRecurring')?.checked;
 
     if (!category || Number.isNaN(limit)) {
       setMsg('bdgMsg', 'Category and limit are required.', 'error');
       return;
     }
 
-    // ⭐ If recurring, save to recurring collection instead
+    // Recurring
     if (isRecurring) {
       await api('/budgets/recurring', {
         method: 'POST',
@@ -606,11 +604,11 @@ async function addBudgetLine() {
       setMsg('bdgMsg', 'Recurring line added.', 'success');
       setTimeout(() => setMsg('bdgMsg', ''), 1500);
 
-      loadBudgetUI(); // refresh table
+      loadBudgetUI();
       return;
     }
 
-    // ⭐ Otherwise, save a normal monthly budget line
+    // Monthly
     let doc;
     try {
       doc = await api(`/budgets/${y}/${m}`);
@@ -639,115 +637,104 @@ async function addBudgetLine() {
   }
 }
 
-
 // --- Sorting Helper ---
 function sortLimits(limits) {
-  const mode = $('bdgSort')?.value || 'recent';
+  const mode = val('bdgSort') || 'recent';
   const arr = [...limits];
 
   switch (mode) {
-    case 'alpha':
-      return arr.sort((a, b) => a.category.localeCompare(b.category));
-    case 'largest':
-      return arr.sort((a, b) => b.limit - a.limit);
-    case 'smallest':
-      return arr.sort((a, b) => a.limit - b.limit);
-    case 'recent':
-    default:
-      return arr;
+    case 'alpha': return arr.sort((a, b) => a.category.localeCompare(b.category));
+    case 'largest': return arr.sort((a, b) => b.limit - a.limit);
+    case 'smallest': return arr.sort((a, b) => a.limit - b.limit);
+    default: return arr;
   }
 }
 
+// --- Render Budget Rows ---
 function renderBudgetRows(limits) {
   const rows = $('bdgRows');
 
   if (!limits || !limits.length) {
-    rows.innerHTML =
-      `<tr><td colspan="3" class="muted">No categories yet.</td></tr>`;
+    rows.innerHTML = `<tr><td colspan="3" class="muted">No categories yet.</td></tr>`;
+    updateRemainingBudget();
     return;
   }
 
   const sorted = sortLimits(limits);
 
-  rows.innerHTML = sorted
-    .map((l, i) => {
-      const badge = l.type === 'recurring'
-        ? `<span class="badge recurring"></span>`
-        : l.type === 'planned'
-        ? `<span class="badge planned">P</span>`
-        : '';
+  rows.innerHTML = sorted.map((l, i) => {
+    const badge =
+      l.type === 'recurring' ? `<span class="badge recurring"></span>` :
+      l.type === 'planned'   ? `<span class="badge planned">P</span>` :
+      '';
 
-      return `
-        <tr data-index="${i}" data-type="${l.type || 'normal'}" data-category="${l.category}">
-          <td>${badge} ${l.category}</td>
-          <td class="right">${fmtMoney(l.limit)}</td>
-          <td class="right">
-            <button class="small" data-edit="${i}">Edit</button>
-            <button class="small danger" data-del="${i}">Delete</button>
-          </td>
-        </tr>
-      `;
-    })
-    .join('');
+    return `
+      <tr data-index="${i}" data-type="${l.type || 'normal'}" data-category="${l.category}">
+        <td>${badge} ${l.category}</td>
+        <td class="right">${fmtMoney(l.limit)}</td>
+        <td class="right">
+          <button class="small" data-edit="${i}">Edit</button>
+          <button class="small danger" data-del="${i}">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 
- // DELETE HANDLERS
-rows.querySelectorAll('button[data-del]').forEach(btn => {
-  btn.onclick = async () => {
-    const index = Number(btn.dataset.del);
-    const row = btn.closest('tr');
-    const type = row.dataset.type;
-    const category = row.dataset.category;
+  // DELETE HANDLERS
+  rows.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.onclick = async () => {
+      const index = Number(btn.dataset.del);
+      const row = btn.closest('tr');
+      const type = row.dataset.type;
+      const category = row.dataset.category;
 
-    const y = Number($('bdgYear').value);
-    const m = Number($('bdgMonth').value);
+      const y = Number(val('bdgYear'));
+      const m = Number(val('bdgMonth'));
+      if (!y || !m) return;
 
-    // 1. Delete recurring
-    if (type === 'recurring') {
-      await api('/budgets/recurring/delete', {
-        method: 'POST',
-        body: { category }
+      if (type === 'recurring') {
+        await api('/budgets/recurring/delete', {
+          method: 'POST',
+          body: { category }
+        });
+        loadBudgetUI();
+        return;
+      }
+
+      if (type === 'planned') {
+        await api('/budgets/planned/delete', {
+          method: 'POST',
+          body: { category }
+        });
+        loadBudgetUI();
+        return;
+      }
+
+      const doc = await api(`/budgets/${y}/${m}`);
+      const monthlyOnly = (doc.limits || []).filter(l => !l.type);
+
+      const newLimits = monthlyOnly.filter(l => l.category !== category);
+
+      const updated = await api(`/budgets/${y}/${m}`, {
+        method: 'PUT',
+        body: { limits: newLimits }
       });
-      loadBudgetUI();
-      return;
-    }
 
-    // 2. Delete planned
-    if (type === 'planned') {
-      await api('/budgets/planned/delete', {
-        method: 'POST',
-        body: { category }
-      });
-      loadBudgetUI();
-      return;
-    }
-
-    // 3. Delete monthly (safe)
-    const doc = await api(`/budgets/${y}/${m}`);
-    const monthlyOnly = (doc.limits || []).filter(l => !l.type);
-
-    const newLimits = monthlyOnly.filter(l => l.category !== category);
-
-    const updated = await api(`/budgets/${y}/${m}`, {
-      method: 'PUT',
-      body: { limits: newLimits }
-    });
-
-    renderBudgetRows(updated.limits);
-  };
-});
+      renderBudgetRows(updated.limits);
+    };
+  });
 
   // EDIT HANDLERS
   rows.querySelectorAll('button[data-edit]').forEach(btn => {
     btn.onclick = () => enterEditMode(Number(btn.dataset.edit));
   });
 
-
-updateRemainingBudget();}
-
+  updateRemainingBudget();
+}
 
 // --- Remaining Budget Calculator ---
 function updateRemainingBudget() {
-  const income = Number($('bdgIncome').value) || 0;
+  const income = Number(val('bdgIncome')) || 0;
 
   let totalBudget = 0;
   document.querySelectorAll('#bdgRows tr').forEach(row => {
@@ -758,33 +745,27 @@ function updateRemainingBudget() {
     }
   });
 
-  const remaining = income - totalBudget;
-  $('bdgRemaining').textContent = fmtMoney(remaining);
+  $('bdgRemaining').textContent = fmtMoney(income - totalBudget);
 }
-
-
 
 // --- Inline Editing ---
 async function enterEditMode(index) {
-  const y = Number($('bdgYear').value);
-  const m = Number($('bdgMonth').value);
+  const y = Number(val('bdgYear'));
+  const m = Number(val('bdgMonth'));
+  if (!y || !m) return;
 
-  // Always fetch the latest version
   const doc = await api(`/budgets/${y}/${m}`);
   const limits = doc.limits || [];
 
   const row = $('bdgRows').querySelector(`tr[data-index="${index}"]`);
   const item = limits[index];
-  const isRecurring = item.type === 'recurring';
-  const isPlanned = item.type === 'planned';
+  if (!item) return;
 
-  if (isRecurring || isPlanned) {
-  setMsg('bdgMsg', 'Recurring and planned items cannot be edited here.', 'error');
-  renderBudgetRows(limits); // restore the row immediately
-  return;
-}
-
-
+  if (item.type === 'recurring' || item.type === 'planned') {
+    setMsg('bdgMsg', 'Recurring and planned items cannot be edited here.', 'error');
+    renderBudgetRows(limits);
+    return;
+  }
 
   row.innerHTML = `
     <td><input id="editCat" value="${item.category}" /></td>
@@ -799,26 +780,23 @@ async function enterEditMode(index) {
   $('cancelEdit').onclick = () => renderBudgetRows(limits);
 }
 
-
-
-// --- Save Edit + Validation ---
+// --- Save Edit ---
 async function saveEdit(index) {
-  const y = Number($('bdgYear').value);
-  const m = Number($('bdgMonth').value);
+  const y = Number(val('bdgYear'));
+  const m = Number(val('bdgMonth'));
+  if (!y || !m) return;
 
   const doc = await api(`/budgets/${y}/${m}`);
   const limits = doc.limits || [];
 
-  const category = $('editCat').value.trim();
-  const limit = Number($('editLimit').value);
+  const category = val('editCat')?.trim();
+  const limit = Number(val('editLimit'));
 
   if (!category) return setMsg('bdgMsg', 'Category cannot be empty.', 'error');
   if (Number.isNaN(limit)) return setMsg('bdgMsg', 'Limit must be a number.', 'error');
   if (limit < 0) return setMsg('bdgMsg', 'Limit must be zero or greater.', 'error');
 
   const monthlyOnly = limits.filter(l => !l.type);
-
-  // Find the correct monthly index
   const target = limits[index];
   const monthlyIndex = monthlyOnly.findIndex(l => l.category === target.category);
 
@@ -828,7 +806,6 @@ async function saveEdit(index) {
     return;
   }
 
-  // Prevent duplicates
   const duplicate = monthlyOnly.some((l, i) =>
     i !== monthlyIndex && l.category.toLowerCase() === category.toLowerCase()
   );
@@ -850,7 +827,6 @@ async function saveEdit(index) {
 
   renderBudgetRows(updated.limits);
 }
-
 
 // --- Summary (Dashboard + Detailed Breakdown in one tab) ---
 
