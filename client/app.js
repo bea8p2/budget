@@ -861,10 +861,14 @@ document.addEventListener('click', (e) => {
 
   const target = tab.dataset.tab;
 
-  if (target === 'budgets') {
-    requestAnimationFrame(initBudgetsTab);
-  }
-});
+if (target === 'budgets') {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      initBudgetsTab();
+    });
+  });
+}
+
 
 // --- Summary (Dashboard + Detailed Breakdown in one tab) ---
 
