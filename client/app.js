@@ -425,7 +425,7 @@ async function loadTransactions() {
   } catch (err) {
     setMsg('txMsg', err.message, 'error');
   }
-}
+
 
 function startEditTransaction(id) {
   const row = document.querySelector(`#txRows tr[data-id="${id}"]`);
