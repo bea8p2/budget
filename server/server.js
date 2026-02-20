@@ -50,6 +50,8 @@ async function start() {
       res.json({ ok: true, message: 'Server is running!', now: new Date().toISOString() });
     });
 
+app.use(express.static('client'));
+
     // Routes
     app.use('/auth', (await import('./routes/auth.js')).default);
     app.use('/accounts', (await import('./routes/accounts.js')).default);
