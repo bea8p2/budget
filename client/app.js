@@ -44,7 +44,7 @@ async function withPending(btn, fn) {
 }
 
 // --- API helper (JWT via HttpOnly cookie, friendly errors) ---
-async function api(path, { method = 'GET', body } = {}) {
+window.api = async function api(path, { method = 'GET', body } = {}) {
   const url = `http://localhost:4000${path}`;
 
   const headers = {};
