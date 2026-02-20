@@ -177,7 +177,6 @@ if (target === 'budgets') {
       }
     }
   });
-}
 
 // --- Settings UI ---
 function hydrateSettings() {
