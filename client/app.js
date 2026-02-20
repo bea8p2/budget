@@ -105,12 +105,9 @@ async function loadBudgetCategories(year, month) {
 // --- Tabs ---
 const tabsNav = $('tabs');
 
-if (target === 'budgets') {
-  requestAnimationFrame(() => {
-    setDefaultPeriodFields();
-    loadBudgetUI();
-  });
-}
+if (tabsNav) {
+  tabsNav.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
 
     // Switch active tab button
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
@@ -121,9 +118,12 @@ if (target === 'budgets') {
     document.querySelectorAll('.tab').forEach(sec => sec.classList.add('hidden'));
     $(target)?.classList.remove('hidden');
 
-    // Tab-specific loaders
-    if (target === 'accounts') loadAccounts();
+    // --- Accounts ---
+    if (target === 'accounts') {
+      loadAccounts();
+    }
 
+    // --- Transactions ---
     if (target === 'transactions') {
       setDefaultTxFilters();
       loadAccountsForTx();
@@ -133,19 +133,17 @@ if (target === 'budgets') {
 
       loadBudgetCategories(y, m);
       loadTransactions();
-    }   // <-- this closes the transactions block
+    }
 
-    // ⭐ THIS is the missing brace you needed
-    // It closes the event listener BEFORE the budgets block starts
-
+    // --- Budgets ---
     if (target === 'budgets') {
-  // Wait for DOM to actually render the tab
-  requestAnimationFrame(() => {
-    setDefaultPeriodFields();
-    loadBudgetUI();
-  });
-}
+      requestAnimationFrame(() => {
+        setDefaultPeriodFields();
+        loadBudgetUI();
+      });
+    }
 
+    // --- Summary ---
     if (target === 'summary') {
       const now = new Date();
       const sumYear = $('sumYear');
@@ -156,7 +154,6 @@ if (target === 'budgets') {
 
       runSummary();
 
-      // --- Next Month ---
       const nextBtn = $('nextMonth');
       if (nextBtn) {
         nextBtn.onclick = () => {
@@ -177,6 +174,8 @@ if (target === 'budgets') {
       }
     }
   });
+}
+
 
 // --- Settings UI ---
 function hydrateSettings() {
